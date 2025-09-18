@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private Logger logger = LoggerFactory.getLogger(OncePerRequestFilter.class);
+    private final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Autowired
     private JwtHelper jwtHelper;
@@ -32,19 +33,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private UserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // Get the JWT token from the cookie
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
         String token = null;
+
+        // 1. Check cookies first
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("jwtToken".equals(cookie.getName())) {
                     token = cookie.getValue();
+                    break;
                 }
             }
         }
+
+        // 2. Check custom header "jwtToken" (legacy support)
         if (token == null) {
             token = request.getHeader("jwtToken");
-            if (token != null) {
+        }
+
+        // 3. Check Authorization: Bearer <token>
+        if (token == null) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7); // remove "Bearer "
             }
         }
 
@@ -53,30 +66,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 username = jwtHelper.getUsernameFromToken(token);
             } catch (IllegalArgumentException e) {
-                logger.info("Illegal Argument while fetching the username !!");
-                e.printStackTrace();
+                logger.error("Illegal Argument while fetching the username from token", e);
             } catch (ExpiredJwtException e) {
-                logger.info("Given jwt token is expired !!");
-                e.printStackTrace();
+                logger.warn("JWT token is expired", e);
             } catch (MalformedJwtException e) {
-                logger.info("Some changes have been made to the token !! Invalid Token");
-                e.printStackTrace();
+                logger.error("Invalid JWT token", e);
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Error while parsing JWT token", e);
             }
         } else {
-            logger.info("JWT Token not found in cookies !!");
+            logger.debug("JWT Token not found in request");
         }
 
+        // Authenticate the user if token is valid
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
             boolean validateToken = this.jwtHelper.validateToken(token, userDetails);
+
             if (validateToken) {
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } else {
-                logger.info("Validation fails !!");
+                logger.info("JWT validation failed");
             }
         }
 
