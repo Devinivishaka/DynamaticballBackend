@@ -96,4 +96,11 @@ public class UserController {
                 .header("Set-Cookie", "jwtToken=" + jwt + "; HttpOnly; Path=/; Max-Age=86400; SameSite=None; Secure")
                 .body(response);
     }
+
+    @GetMapping("/logout")
+    public ResponseEntity<String> logout() {
+        return ResponseEntity.ok()
+                .header("Set-Cookie", "jwtToken=; HttpOnly; Path=/; Max-Age=0; SameSite=None; Secure")
+                .body("Logged out successfully");
+    }
 }
