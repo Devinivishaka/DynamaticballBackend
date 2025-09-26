@@ -16,7 +16,7 @@ import java.security.SecureRandom;
 import java.util.Date;
 
 @RestController
-@RequestMapping("/reset-password")
+@RequestMapping("/api/v1/reset-password")
 public class ResetPasswordController {
 
     @Autowired
@@ -50,7 +50,7 @@ public class ResetPasswordController {
         return passwordEncoder.matches(rawOtp, hashedOtp);
     }
 
-    /** 1️⃣ Request OTP **/
+    /** 1️ Request OTP **/
     @PostMapping("/request")
     public ResponseEntity<String> requestOtp(@RequestBody ForgetPassword request) throws MessagingException {
         User user = userRepository.findByUsername(request.getEmail())
@@ -78,7 +78,7 @@ public class ResetPasswordController {
         return ResponseEntity.ok("OTP sent to your email.");
     }
 
-    /** 2️⃣ Validate OTP **/
+    /** 2️ Validate OTP **/
     @PostMapping("/validate")
     public ResponseEntity<String> validateOtp(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsername(request.getEmail())
@@ -96,7 +96,7 @@ public class ResetPasswordController {
         return ResponseEntity.ok("OTP is valid");
     }
 
-    /** 3️⃣ Reset Password **/
+    /** 3️ Reset Password **/
     @PostMapping("/reset")
     public ResponseEntity<String> resetPassword(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsername(request.getEmail())
@@ -107,7 +107,7 @@ public class ResetPasswordController {
 
         if (token.getExpiryDate().before(new Date()))
             return ResponseEntity.badRequest().body("OTP expired");
-
+  
         if (!matchOtp(request.getToken(), token.getOtpHash()))
             return ResponseEntity.badRequest().body("Invalid OTP");
 

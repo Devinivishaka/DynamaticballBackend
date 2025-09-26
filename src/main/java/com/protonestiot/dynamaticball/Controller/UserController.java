@@ -7,6 +7,7 @@ import com.protonestiot.dynamaticball.Repository.UserRepository;
 import com.protonestiot.dynamaticball.Service.CustomUserDetailsService;
 import com.protonestiot.dynamaticball.Service.UserService;
 import com.protonestiot.dynamaticball.util.JwtHelper;
+import jakarta.validation.Valid;
 import org.apache.catalina.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v1/users")
 public class UserController {
 
     @Autowired
@@ -45,9 +46,9 @@ public class UserController {
 
 
     // Add referee (Only SUPER_ADMIN)
-//    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/referees")
-    public ResponseEntity<User> addReferee(@RequestBody User user) {
+    public ResponseEntity<User> addReferee(@RequestBody @Valid User user) {
         return ResponseEntity.ok(userService.addReferee(user));
     }
 
