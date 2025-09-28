@@ -8,6 +8,11 @@ import lombok.Setter;
 public class LoginRequest {
     // Getters and Setters
     private String username;
+
+    public void setUsername(String username) {
+        this.username = username != null ? username.toLowerCase() : null;
+    }
+
     private String password;
 
 }

@@ -1,10 +1,10 @@
 package com.protonestiot.dynamaticball.Service;
 
+import com.protonestiot.dynamaticball.Dto.RefereeResponseDto;
 import com.protonestiot.dynamaticball.Entity.Role;
 import com.protonestiot.dynamaticball.Entity.User;
 import com.protonestiot.dynamaticball.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,20 +15,32 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
     // Add referee (only SUPER_ADMIN can call this)
     public User addReferee(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        // Store plain password directly (no encoding)
         user.setRole(Role.REFEREE);
         return userRepository.save(user);
     }
 
-    // Get all referees
+    // Get all referees (raw User objects - not used in controller anymore)
     public List<User> getAllReferees() {
         return userRepository.findAll().stream()
                 .filter(user -> user.getRole() == Role.REFEREE)
+                .toList();
+    }
+
+    // Get all referees as DTOs (Super Admin view with password)
+    public List<RefereeResponseDto> getAllRefereesDto() {
+        return userRepository.findAll().stream()
+                .filter(user -> user.getRole() == Role.REFEREE)
+                .map(user -> new RefereeResponseDto(
+                        user.getId(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getUsername(),
+                        user.getPassword(),
+                        "EDIT/REMOVE"
+                ))
                 .toList();
     }
 
@@ -41,7 +53,8 @@ public class UserService {
         if (updatedUser.getLastName() != null) user.setLastName(updatedUser.getLastName());
         if (updatedUser.getUsername() != null) user.setUsername(updatedUser.getUsername());
         if (updatedUser.getPassword() != null) {
-            user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+            // Store plain password (no encoding)
+            user.setPassword(updatedUser.getPassword());
         }
         return userRepository.save(user);
     }

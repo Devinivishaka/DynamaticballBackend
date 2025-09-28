@@ -36,6 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+
         String token = null;
 
         // 1. Check cookies first
@@ -95,5 +96,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Skip JWT filter for login, signup, and password reset endpoints.
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        return path.startsWith("/api/v1/auth/");
     }
 }
