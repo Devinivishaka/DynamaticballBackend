@@ -80,20 +80,29 @@ public class AuthController {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // 1️⃣ Generate OTP
         String otp = generateOtp();
 
-        VerificationToken existingToken = tokenRepository.findByUser(user);
-        if (existingToken != null) tokenRepository.delete(existingToken);
+        // 2️⃣ Hash OTP before saving (safer than storing plain OTP)
+        String otpHash = String.valueOf(otp.hashCode());
 
-        VerificationToken token = new VerificationToken();
-        token.setUser(user);
-        token.setOtpHash(otp); // store plain OTP
+        // 3️⃣ Check existing token
+        VerificationToken token = tokenRepository.findByUser(user);
+        if (token == null) {
+            token = new VerificationToken();
+            token.setUser(user);
+        }
+
+        token.setOtpHash(otpHash);
         token.setExpiryDate(new Date(System.currentTimeMillis() + OTP_EXPIRATION_MS));
         tokenRepository.save(token);
 
+        // 4️⃣ Send plain OTP to email
         emailService.sendOtpEmail(user.getUsername(), otp);
+
         return ResponseEntity.ok("OTP sent to your email.");
     }
+
 
     @PostMapping("/reset-password/validate")
     public ResponseEntity<String> validateOtp(@RequestBody ForgetPassword request) {
@@ -103,10 +112,14 @@ public class AuthController {
         VerificationToken token = tokenRepository.findByUser(user);
         if (token == null) return ResponseEntity.badRequest().body("No OTP found.");
         if (token.getExpiryDate().before(new Date())) return ResponseEntity.badRequest().body("OTP expired");
-        if (!request.getToken().equals(token.getOtpHash())) return ResponseEntity.badRequest().body("Invalid OTP");
+
+        // Compare hashes instead of plain values
+        String inputHash = String.valueOf(request.getToken().hashCode());
+        if (!inputHash.equals(token.getOtpHash())) return ResponseEntity.badRequest().body("Invalid OTP");
 
         return ResponseEntity.ok("OTP is valid");
     }
+
 
     @PostMapping("/reset-password/reset")
     public ResponseEntity<String> resetPassword(@RequestBody ForgetPassword request) {
@@ -116,14 +129,22 @@ public class AuthController {
         VerificationToken token = tokenRepository.findByUser(user);
         if (token == null) return ResponseEntity.badRequest().body("No OTP found.");
         if (token.getExpiryDate().before(new Date())) return ResponseEntity.badRequest().body("OTP expired");
-        if (!request.getToken().equals(token.getOtpHash())) return ResponseEntity.badRequest().body("Invalid OTP");
+
+        // Compare OTP hashes
+        String inputHash = String.valueOf(request.getToken().hashCode());
+        if (!inputHash.equals(token.getOtpHash())) return ResponseEntity.badRequest().body("Invalid OTP");
+
         if (!request.getPassword().equals(request.getConfirmPassword()))
             return ResponseEntity.badRequest().body("Passwords do not match");
 
+        // Save new password
         user.setPassword(request.getPassword());
         userRepository.save(user);
-        tokenRepository.delete(token);
+
+        token.setExpiryDate(new Date(System.currentTimeMillis() - 1000));
+        tokenRepository.save(token);
 
         return ResponseEntity.ok("Password reset successfully");
     }
+
 }
