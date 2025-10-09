@@ -20,6 +20,18 @@ public class UserController {
 
     // ---------------- USER CRUD ----------------
     @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @GetMapping
+    public ResponseEntity<?> getUsers(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String search)
+
+    {
+        return ResponseEntity.ok(userService.getUsers(page, limit, search));
+    }
+
+
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/referees")
     public ResponseEntity<User> addReferee(@RequestBody @Valid User user) {
         return ResponseEntity.ok(userService.addReferee(user));

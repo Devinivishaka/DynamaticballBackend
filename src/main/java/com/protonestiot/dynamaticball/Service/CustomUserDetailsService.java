@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @EnableAsync(proxyTargetClass=true)
@@ -25,6 +26,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        // ✅ Update lastLogin on successful lookup (login)
+        user.setLastLogin(LocalDateTime.now());
+        userRepository.save(user);
 
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),

@@ -5,9 +5,15 @@ import com.protonestiot.dynamaticball.Entity.Role;
 import com.protonestiot.dynamaticball.Entity.User;
 import com.protonestiot.dynamaticball.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UserService {
@@ -17,8 +23,13 @@ public class UserService {
 
     // Add referee (only SUPER_ADMIN can call this)
     public User addReferee(User user) {
-        // Store plain password directly (no encoding)
+
         user.setRole(Role.REFEREE);
+
+        //  Generate formatted ID based on user count
+        long count = userRepository.count() + 1;
+        user.setUserId(String.format("U_%03d", count));
+
         return userRepository.save(user);
     }
 
@@ -63,4 +74,51 @@ public class UserService {
     public void deleteReferee(Long id) {
         userRepository.deleteById(id);
     }
+
+    // ✅ Fetch paginated + searchable user list
+    public Map<String, Object> getUsers(int page, int limit, String search) {
+
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+        Page<User> usersPage;
+
+        if (search != null && !search.trim().isEmpty()) {
+            usersPage = userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrUsernameContainingIgnoreCase(
+                    search, search, search, pageable
+            );
+        } else {
+            usersPage = userRepository.findAll(pageable);
+        }
+
+        //  Format response
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("users", usersPage.getContent().stream().map(this::convertToUserResponse).toList());
+
+        Map<String, Object> pagination = new LinkedHashMap<>();
+        pagination.put("currentPage", usersPage.getNumber() + 1);
+        pagination.put("totalPages", usersPage.getTotalPages());
+        pagination.put("totalItems", usersPage.getTotalElements());
+        pagination.put("itemsPerPage", limit);
+
+        data.put("pagination", pagination);
+        response.put("data", data);
+
+        return response;
+    }
+
+    //  Convert User entity to response format
+    private Map<String, Object> convertToUserResponse(User user) {
+        Map<String, Object> userMap = new LinkedHashMap<>();
+
+        userMap.put("userId", user.getUserId());
+        userMap.put("firstName", user.getFirstName());
+        userMap.put("lastName", user.getLastName());
+        userMap.put("username", user.getUsername());
+        userMap.put("createdAt", user.getCreatedAt());
+        userMap.put("lastLogin", user.getLastLogin());
+        return userMap;
+    }
+
 }
