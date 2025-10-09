@@ -7,4 +7,7 @@ import java.util.Optional;
 
 public interface GameSetupRepository extends JpaRepository<GameSetup, Long> {
     Optional<GameSetup> findBySetupCode(String setupCode);
+
+    long countBySetupCodeIsNotNull();
 }
+

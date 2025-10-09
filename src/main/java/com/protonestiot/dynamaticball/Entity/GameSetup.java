@@ -21,7 +21,7 @@ public class GameSetup {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String setupCode; // e.g. GS_ab12cd34
+    private String setupCode;
 
     private int gameTime; // minutes
     private int playersPerTeam;
@@ -41,5 +41,14 @@ public class GameSetup {
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+
+    }
+
+    //  Generate formatted setupCode after id is assigned
+    @PostPersist
+    public void generateSetupCode() {
+        if (this.setupCode == null && this.id != null) {
+            this.setupCode = String.format("GS_%03d", this.id);
+        }
     }
 }

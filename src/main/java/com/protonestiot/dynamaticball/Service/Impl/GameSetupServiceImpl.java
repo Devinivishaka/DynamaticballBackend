@@ -20,12 +20,19 @@ public class GameSetupServiceImpl implements GameSetupService {
     @Transactional
     public GameSetupResponseDto saveGameSetup(GameSetupRequestDto requestDto) {
         GameSetup entity = GameSetupMapper.toEntity(requestDto);
-        // teams and players are cascade saved
+
+        //  Generate sequential code
+        long count = gameSetupRepository.countBySetupCodeIsNotNull() + 1;
+        String setupCode = String.format("GS_%03d", count);
+        entity.setSetupCode(setupCode);
+
         GameSetup saved = gameSetupRepository.save(entity);
+
         return GameSetupResponseDto.builder()
                 .success(true)
                 .gameSetupId(saved.getSetupCode())
                 .message("Game setup saved successfully")
                 .build();
     }
+
 }

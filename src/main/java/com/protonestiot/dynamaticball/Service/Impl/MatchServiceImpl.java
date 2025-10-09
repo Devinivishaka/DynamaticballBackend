@@ -37,7 +37,10 @@ public class MatchServiceImpl implements MatchService {
         GameSetup gs = gameSetupRepository.findBySetupCode(dto.getGameSetupId())
                 .orElseThrow(() -> new RuntimeException("Game setup not found: " + dto.getGameSetupId()));
 
-        String matchCode = "M_" + UUID.randomUUID().toString().substring(0, 8);
+        //  Sequential match code
+        long count = matchRepository.count() + 1;
+        String matchCode = String.format("M_%03d", count);
+
         LocalDateTime start = parseOrNow(dto.getStartTime());
 
         Long teamAId = null;
@@ -75,6 +78,7 @@ public class MatchServiceImpl implements MatchService {
                 .build();
     }
 
+
     @Override
     @Transactional
     public GenericResponseDto changeMatchStatus(MatchActionRequestDto dto, String action) {
@@ -103,10 +107,18 @@ public class MatchServiceImpl implements MatchService {
                         .timestamp(ts)
                         .build());
                 break;
+
             case "stop":
                 match.setStatus("ENDED");
                 match.setEndTime(ts);
-                matchRepository.save(match);
+                match = matchRepository.save(match);
+
+                if (match.getGameId() == null) {
+                    long count = matchRepository.countByGameIdIsNotNull() + 1; // ✅ count existing games
+                    match.setGameId(String.format("G_%03d", count));
+                    match = matchRepository.save(match);
+                }
+
                 matchEventRepository.save(MatchEvent.builder()
                         .match(match)
                         .eventType("match_end")
@@ -114,6 +126,8 @@ public class MatchServiceImpl implements MatchService {
                         .timestamp(ts)
                         .build());
                 break;
+
+
             default:
                 throw new RuntimeException("Unknown action: " + action);
         }
