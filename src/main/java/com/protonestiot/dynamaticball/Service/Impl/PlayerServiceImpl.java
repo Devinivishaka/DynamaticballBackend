@@ -25,7 +25,7 @@ public class PlayerServiceImpl implements PlayerService {
         }
 
         Team team = teamRepository.findById(dto.getTeamId())
-                .orElseThrow(() -> new RuntimeException("Team not found for ID: " + dto.getTeamKey()));
+                .orElseThrow(() -> new RuntimeException("Team not found: " + dto.getTeamId()));
 
         Player player = Player.builder()
                 .playerCode(dto.getPlayerId())
@@ -50,9 +50,9 @@ public class PlayerServiceImpl implements PlayerService {
         if (dto.getLeftWristband() != null) player.setLeftWristband(dto.getLeftWristband());
         if (dto.getCamera() != null) player.setCamera(dto.getCamera());
 
-        if (dto.getTeamKey() != null) {
+        if (dto.getTeamId() != null) {
             Team team = teamRepository.findById(dto.getTeamId())
-                    .orElseThrow(() -> new RuntimeException("Team not found for ID: " + dto.getTeamKey()));
+                    .orElseThrow(() -> new RuntimeException("Team not found for ID: " + dto.getTeamId()));
             player.setTeam(team);
         }
 

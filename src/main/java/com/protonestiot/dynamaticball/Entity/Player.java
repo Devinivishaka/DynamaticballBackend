@@ -18,7 +18,7 @@ public class Player {
     private Long id;
 
     // business player id from device/UI (e.g., "001")
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String playerCode;
 
     private String belt;
