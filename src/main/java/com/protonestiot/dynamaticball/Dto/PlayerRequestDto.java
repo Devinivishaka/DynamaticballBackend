@@ -13,4 +13,5 @@ public class PlayerRequestDto {
     private String leftWristband;
     private String camera;
     private Long teamId;
+    private String teamKey;
 }

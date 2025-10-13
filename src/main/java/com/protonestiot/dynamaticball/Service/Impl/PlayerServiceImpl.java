@@ -20,9 +20,14 @@ public class PlayerServiceImpl implements PlayerService {
     @Override
     @Transactional
     public Player addPlayer(PlayerRequestDto dto) {
+        if (dto == null) {
+            throw new RuntimeException("Player data cannot be null");
+        }
+
         Team team = teamRepository.findById(dto.getTeamId())
-                .orElseThrow(() -> new RuntimeException("Team not found"));
-        Player p = Player.builder()
+                .orElseThrow(() -> new RuntimeException("Team not found for ID: " + dto.getTeamKey()));
+
+        Player player = Player.builder()
                 .playerCode(dto.getPlayerId())
                 .belt(dto.getBelt())
                 .rightWristband(dto.getRightWristband())
@@ -30,24 +35,28 @@ public class PlayerServiceImpl implements PlayerService {
                 .camera(dto.getCamera())
                 .team(team)
                 .build();
-        return playerRepository.save(p);
+
+        return playerRepository.save(player);
     }
 
     @Override
     @Transactional
     public Player updatePlayer(String playerCode, PlayerRequestDto dto) {
-        Player p = playerRepository.findByPlayerCode(playerCode)
+        Player player = playerRepository.findByPlayerCode(playerCode)
                 .orElseThrow(() -> new RuntimeException("Player not found"));
-        if (dto.getBelt() != null) p.setBelt(dto.getBelt());
-        if (dto.getRightWristband() != null) p.setRightWristband(dto.getRightWristband());
-        if (dto.getLeftWristband() != null) p.setLeftWristband(dto.getLeftWristband());
-        if (dto.getCamera() != null) p.setCamera(dto.getCamera());
-        if (dto.getTeamId() != null) {
-            Team t = teamRepository.findById(dto.getTeamId())
-                    .orElseThrow(() -> new RuntimeException("Team not found"));
-            p.setTeam(t);
+
+        if (dto.getBelt() != null) player.setBelt(dto.getBelt());
+        if (dto.getRightWristband() != null) player.setRightWristband(dto.getRightWristband());
+        if (dto.getLeftWristband() != null) player.setLeftWristband(dto.getLeftWristband());
+        if (dto.getCamera() != null) player.setCamera(dto.getCamera());
+
+        if (dto.getTeamKey() != null) {
+            Team team = teamRepository.findById(dto.getTeamId())
+                    .orElseThrow(() -> new RuntimeException("Team not found for ID: " + dto.getTeamKey()));
+            player.setTeam(team);
         }
-        return playerRepository.save(p);
+
+        return playerRepository.save(player);
     }
 
     @Override
