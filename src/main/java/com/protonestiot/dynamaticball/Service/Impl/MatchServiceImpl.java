@@ -142,26 +142,34 @@ public class MatchServiceImpl implements MatchService {
                 .orElseThrow(() -> new RuntimeException("Match not found: " + dto.getMatchId()));
         LocalDateTime ts = parseOrNow(dto.getTimestamp());
 
-        if ("teamA".equalsIgnoreCase(dto.getTeamId())) {
+        Long teamId = Long.parseLong(dto.getTeamId());
+
+        if (match.getTeamAId().equals(teamId)) {
             match.setScoreTeamA(match.getScoreTeamA() + dto.getScore());
-        } else if ("teamB".equalsIgnoreCase(dto.getTeamId())) {
+        } else if (match.getTeamBId().equals(teamId)) {
             match.setScoreTeamB(match.getScoreTeamB() + dto.getScore());
         } else {
-            throw new RuntimeException("teamId must be 'teamA' or 'teamB'");
+            throw new RuntimeException("Invalid teamId: " + teamId + ". Must match teamAId or teamBId in this match.");
         }
+
         matchRepository.save(match);
 
         MatchEvent ev = MatchEvent.builder()
                 .match(match)
                 .eventType("goal")
                 .playerCode(dto.getPlayerId())
-                .teamKey(dto.getTeamId())
-                .description("Score +" + dto.getScore() + " to " + dto.getTeamId())
+                .teamKey(String.valueOf(teamId))
+                .description("Score +" + dto.getScore() + " to teamId " + teamId)
                 .timestamp(ts)
                 .build();
+
         matchEventRepository.save(ev);
 
-        return GenericResponseDto.builder().success(true).message("Score updated").id(match.getMatchCode()).build();
+        return GenericResponseDto.builder()
+                .success(true)
+                .message("Score updated for teamId " + teamId)
+                .id(match.getMatchCode())
+                .build();
     }
 
     @Override
