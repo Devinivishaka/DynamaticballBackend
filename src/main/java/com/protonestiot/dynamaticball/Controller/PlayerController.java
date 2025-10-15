@@ -19,14 +19,14 @@ public class PlayerController {
         return ResponseEntity.ok(playerService.addPlayer(dto));
     }
 
-    @PutMapping("/{playerCode}")
-    public ResponseEntity<Player> updatePlayer(@PathVariable String playerCode, @RequestBody PlayerRequestDto dto) {
-        return ResponseEntity.ok(playerService.updatePlayer(playerCode, dto));
+    @PutMapping("/{id}")
+    public ResponseEntity<Player> updatePlayer(@PathVariable Long id, @RequestBody PlayerRequestDto dto) {
+        return ResponseEntity.ok(playerService.updatePlayerById(id, dto));
     }
 
-    @DeleteMapping("/{playerCode}")
-    public ResponseEntity<?> deletePlayer(@PathVariable String playerCode) {
-        playerService.deletePlayer(playerCode);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletePlayer(@PathVariable Long id) {
+        playerService.deletePlayerById(id);
         return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Player deleted successfully"));
     }
 }

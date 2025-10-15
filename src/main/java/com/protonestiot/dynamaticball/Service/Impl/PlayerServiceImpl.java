@@ -41,9 +41,9 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
-    public Player updatePlayer(String playerCode, PlayerRequestDto dto) {
-        Player player = playerRepository.findByPlayerCode(playerCode)
-                .orElseThrow(() -> new RuntimeException("Player not found"));
+    public Player updatePlayerById(Long id, PlayerRequestDto dto) {
+        Player player = playerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + id));
 
         if (dto.getBelt() != null) player.setBelt(dto.getBelt());
         if (dto.getRightWristband() != null) player.setRightWristband(dto.getRightWristband());
@@ -61,7 +61,10 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
-    public void deletePlayer(String playerCode) {
-        playerRepository.deleteByPlayerCode(playerCode);
+    public void deletePlayerById(Long id) {
+        if (!playerRepository.existsById(id)) {
+            throw new RuntimeException("Player not found with ID: " + id);
+        }
+        playerRepository.deleteById(id);
     }
 }
