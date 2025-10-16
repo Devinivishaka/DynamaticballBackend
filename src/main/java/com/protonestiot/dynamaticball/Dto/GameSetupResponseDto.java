@@ -11,4 +11,7 @@ public class GameSetupResponseDto {
     private boolean success;
     private String gameSetupId;
     private String message;
+    private Long teamAId;
+    private Long teamBId;
+
 }

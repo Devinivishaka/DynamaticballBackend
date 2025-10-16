@@ -28,9 +28,20 @@ public class GameSetupServiceImpl implements GameSetupService {
 
         GameSetup saved = gameSetupRepository.save(entity);
 
+        // Fetch team IDs if teams exist
+        Long teamAId = null;
+        Long teamBId = null;
+
+        if (saved.getTeams() != null && saved.getTeams().size() >= 2) {
+            teamAId = saved.getTeams().get(0).getId();
+            teamBId = saved.getTeams().get(1).getId();
+        }
+
         return GameSetupResponseDto.builder()
                 .success(true)
                 .gameSetupId(saved.getSetupCode())
+                .teamAId(teamAId)
+                .teamBId(teamBId)
                 .message("Game setup saved successfully")
                 .build();
     }
