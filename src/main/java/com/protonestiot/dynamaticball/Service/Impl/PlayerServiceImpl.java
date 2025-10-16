@@ -24,9 +24,36 @@ public class PlayerServiceImpl implements PlayerService {
             throw new RuntimeException("Player data cannot be null");
         }
 
+        // Find team
         Team team = teamRepository.findById(dto.getTeamId())
                 .orElseThrow(() -> new RuntimeException("Team not found: " + dto.getTeamId()));
 
+        // Get allowed players per team from Game configuration
+        int playersPerTeam = team.getGameSetup().getPlayersPerTeam(); // adjust field name if needed
+
+        // Count how many players are already in this team
+        long currentCount = playerRepository.countByTeam(team);
+
+        if (currentCount >= playersPerTeam) {
+            throw new RuntimeException(
+                    "Cannot add more players. Team '" + team.getTeamKey() +
+                            "' already has the maximum of " + playersPerTeam + " players."
+            );
+        }
+
+        // (Optional) Ensure both teams in same game are balanced
+        /*if (team.getGameSetup() != null && team.getGameSetup().getTeams() != null) {
+            for (Team otherTeam : team.getGameSetup().getTeams()) {
+                if (!otherTeam.getId().equals(team.getId())) {
+                    long otherCount = playerRepository.countByTeam(otherTeam);
+                    if (Math.abs(currentCount + 1 - otherCount) > 1) {
+                        throw new RuntimeException("Teams must have equal number of players.");
+                    }
+                }
+            }
+        } */
+
+        // Create player
         Player player = Player.builder()
                 .playerCode(dto.getPlayerId())
                 .belt(dto.getBelt())
