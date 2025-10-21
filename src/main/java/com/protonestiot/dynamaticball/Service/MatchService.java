@@ -8,4 +8,5 @@ public interface MatchService {
     GenericResponseDto addScore(ScoreRequestDto dto);
     GenericResponseDto addBallEvent(BallEventRequestDto dto);
     GenericResponseDto halftime(MatchActionRequestDto dto);
+    MatchStatusDto getMatchStatus(String matchCode);
 }

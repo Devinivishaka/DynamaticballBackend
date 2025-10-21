@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface MatchEventRepository extends JpaRepository<MatchEvent, Long> {
     List<MatchEvent> findByMatchOrderByTimestampAsc(Match match);
+
+    List<MatchEvent> findTop5ByMatchOrderByTimestampDesc(Match match);
 }

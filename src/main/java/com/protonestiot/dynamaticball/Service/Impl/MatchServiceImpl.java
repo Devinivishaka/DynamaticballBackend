@@ -5,6 +5,7 @@ import com.protonestiot.dynamaticball.Entity.*;
 import com.protonestiot.dynamaticball.Repository.*;
 import com.protonestiot.dynamaticball.Service.MatchService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ public class MatchServiceImpl implements MatchService {
     private final MatchRepository matchRepository;
     private final MatchEventRepository matchEventRepository;
     private final TeamRepository teamRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private LocalDateTime parseOrNow(String iso) {
         if (iso == null) return LocalDateTime.now();
@@ -37,7 +39,6 @@ public class MatchServiceImpl implements MatchService {
         GameSetup gs = gameSetupRepository.findBySetupCode(dto.getGameSetupId())
                 .orElseThrow(() -> new RuntimeException("Game setup not found: " + dto.getGameSetupId()));
 
-        //  Sequential match code
         long count = matchRepository.count() + 1;
         String matchCode = String.format("M_%03d", count);
 
@@ -71,13 +72,14 @@ public class MatchServiceImpl implements MatchService {
                 .build();
         matchEventRepository.save(ev);
 
+        messagingTemplate.convertAndSend("/topic/match/" + match.getMatchCode(), ev);
+
         return GenericResponseDto.builder()
                 .success(true)
                 .message("Match started successfully")
                 .id(match.getMatchCode())
                 .build();
     }
-
 
     @Override
     @Transactional
@@ -86,50 +88,56 @@ public class MatchServiceImpl implements MatchService {
                 .orElseThrow(() -> new RuntimeException("Match not found: " + dto.getMatchId()));
         LocalDateTime ts = parseOrNow(dto.getTimestamp());
 
+        MatchEvent ev = null;
+
         switch (action.toLowerCase()) {
             case "pause":
                 match.setStatus("PAUSED");
                 matchRepository.save(match);
-                matchEventRepository.save(MatchEvent.builder()
+                ev = MatchEvent.builder()
                         .match(match)
                         .eventType("pause")
                         .description("Match paused")
                         .timestamp(ts)
-                        .build());
+                        .build();
+                matchEventRepository.save(ev);
                 break;
             case "resume":
                 match.setStatus("ACTIVE");
                 matchRepository.save(match);
-                matchEventRepository.save(MatchEvent.builder()
+                ev = MatchEvent.builder()
                         .match(match)
                         .eventType("resume")
                         .description("Match resumed")
                         .timestamp(ts)
-                        .build());
+                        .build();
+                matchEventRepository.save(ev);
                 break;
-
             case "stop":
                 match.setStatus("ENDED");
                 match.setEndTime(ts);
                 match = matchRepository.save(match);
 
                 if (match.getGameId() == null) {
-                    long count = matchRepository.countByGameIdIsNotNull() + 1; // ✅ count existing games
+                    long count = matchRepository.countByGameIdIsNotNull() + 1;
                     match.setGameId(String.format("G_%03d", count));
                     match = matchRepository.save(match);
                 }
 
-                matchEventRepository.save(MatchEvent.builder()
+                ev = MatchEvent.builder()
                         .match(match)
                         .eventType("match_end")
                         .description("Match ended")
                         .timestamp(ts)
-                        .build());
+                        .build();
+                matchEventRepository.save(ev);
                 break;
-
-
             default:
                 throw new RuntimeException("Unknown action: " + action);
+        }
+
+        if (ev != null) {
+            messagingTemplate.convertAndSend("/topic/match/" + match.getMatchCode(), ev);
         }
 
         return GenericResponseDto.builder().success(true).message("Action applied: " + action).id(match.getMatchCode()).build();
@@ -165,6 +173,8 @@ public class MatchServiceImpl implements MatchService {
 
         matchEventRepository.save(ev);
 
+        messagingTemplate.convertAndSend("/topic/match/" + match.getMatchCode(), ev);
+
         return GenericResponseDto.builder()
                 .success(true)
                 .message("Score updated for teamId " + teamId)
@@ -188,6 +198,8 @@ public class MatchServiceImpl implements MatchService {
                 .build();
         matchEventRepository.save(ev);
 
+        messagingTemplate.convertAndSend("/topic/match/" + match.getMatchCode(), ev);
+
         return GenericResponseDto.builder().success(true).message("Event recorded").id(match.getMatchCode()).build();
     }
 
@@ -197,12 +209,38 @@ public class MatchServiceImpl implements MatchService {
         Match match = matchRepository.findByMatchCode(dto.getMatchId())
                 .orElseThrow(() -> new RuntimeException("Match not found"));
         LocalDateTime ts = parseOrNow(dto.getTimestamp());
-        matchEventRepository.save(MatchEvent.builder()
+
+        MatchEvent ev = MatchEvent.builder()
                 .match(match)
                 .eventType("halftime")
                 .description("Halftime")
                 .timestamp(ts)
-                .build());
+                .build();
+        matchEventRepository.save(ev);
+
+        messagingTemplate.convertAndSend("/topic/match/" + match.getMatchCode(), ev);
+
         return GenericResponseDto.builder().success(true).message("Halftime recorded").id(match.getMatchCode()).build();
+    }
+
+    // New method to get latest match status
+    public MatchStatusDto getMatchStatus(String matchCode) {
+        Match match = matchRepository.findByMatchCode(matchCode)
+                .orElseThrow(() -> new RuntimeException("Match not found: " + matchCode));
+
+        List<MatchEvent> recentEvents = matchEventRepository.findTop5ByMatchOrderByTimestampDesc(match);
+
+        return MatchStatusDto.builder()
+                .matchCode(match.getMatchCode())
+                .gameId(match.getGameId())
+                .status(match.getStatus())
+                .scoreTeamA(match.getScoreTeamA())
+                .scoreTeamB(match.getScoreTeamB())
+                .startTime(match.getStartTime() != null ? match.getStartTime().toString() : null)
+                .endTime(match.getEndTime() != null ? match.getEndTime().toString() : null)
+                .teamAId(match.getTeamAId())
+                .teamBId(match.getTeamBId())
+                .recentEvents(recentEvents)
+                .build();
     }
 }
