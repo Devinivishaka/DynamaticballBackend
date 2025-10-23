@@ -1,5 +1,6 @@
 package com.protonestiot.dynamaticball.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,6 +30,7 @@ public class Match {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_setup_id")
+    @JsonIgnore
     private GameSetup gameSetup;
 
     private LocalDateTime startTime;

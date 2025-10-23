@@ -1,5 +1,6 @@
 package com.protonestiot.dynamaticball.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,6 +21,7 @@ public class MatchEvent {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "match_id")
+    @JsonIgnore
     private Match match;
 
     private String eventType; // match_start, goal, possession_change, halftime, pause, resume, stop
