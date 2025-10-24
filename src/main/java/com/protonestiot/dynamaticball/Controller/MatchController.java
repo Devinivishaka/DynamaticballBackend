@@ -47,4 +47,21 @@ public class MatchController {
     public ResponseEntity<GenericResponseDto> halftime(@RequestBody MatchActionRequestDto dto) {
         return ResponseEntity.ok(matchService.halftime(dto));
     }
+
+    @GetMapping("/{matchId}/summary")
+    public ResponseEntity<GenericMatchSummaryResponse> getMatchSummary(@PathVariable String matchId) {
+        return ResponseEntity.ok(matchService.getMatchSummary(matchId));
+    }
+
+    @GetMapping("/{matchId}/timeline")
+    public GenericMatchTimelineResponse getMatchTimeline(@PathVariable("matchId") String matchId) {
+        return matchService.getMatchTimeline(matchId);
+    }
+
+    @GetMapping("/{matchId}/player-stats")
+    public GenericPlayerStatsResponse getPlayerStatistics(@PathVariable("matchId") String matchId) {
+        return matchService.getPlayerStatistics(matchId);
+    }
+
+
 }

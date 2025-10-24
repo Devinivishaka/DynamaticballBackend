@@ -12,7 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.*;
 import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.UUID;
+import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,8 @@ public class MatchServiceImpl implements MatchService {
             return LocalDateTime.now();
         }
     }
+
+
 
     @Override
     @Transactional
@@ -243,4 +246,181 @@ public class MatchServiceImpl implements MatchService {
                 .recentEvents(recentEvents)
                 .build();
     }
+
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public GenericMatchSummaryResponse getMatchSummary(String matchCode) {
+        Match match = matchRepository.findByMatchCode(matchCode)
+                .orElseThrow(() -> new RuntimeException("Match not found: " + matchCode));
+
+        GameSetup gs = match.getGameSetup();
+
+        // Map team A
+        Team teamA = gs.getTeams().stream()
+                .filter(t -> t.getId().equals(match.getTeamAId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("TeamA not found"));
+
+        TeamSummaryDto teamADto = TeamSummaryDto.builder()
+                .name(teamA.getName())
+                .color(teamA.getColor())
+                .score(match.getScoreTeamA())
+                .players(teamA.getPlayers().stream()
+                        .map(p -> PlayerSummaryDto.builder()
+                                .playerId(p.getPlayerCode())
+                                .maxSpeed(0)             // fill if available
+                                .penaltyTime("0:00")     // fill if available
+                                .ballPossessingTime("0:00") // fill if available
+                                .ballControlInitiations(0) // fill if available
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
+
+        // Map team B
+        Team teamB = gs.getTeams().stream()
+                .filter(t -> t.getId().equals(match.getTeamBId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("TeamB not found"));
+
+        TeamSummaryDto teamBDto = TeamSummaryDto.builder()
+                .name(teamB.getName())
+                .color(teamB.getColor())
+                .score(match.getScoreTeamB())
+                .players(teamB.getPlayers().stream()
+                        .map(p -> PlayerSummaryDto.builder()
+                                .playerId(p.getPlayerCode())
+                                .maxSpeed(0)
+                                .penaltyTime("0:00")
+                                .ballPossessingTime("0:00")
+                                .ballControlInitiations(0)
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
+
+        // Compute duration
+        String duration = "00:00";
+        if (match.getStartTime() != null && match.getEndTime() != null) {
+            Duration dur = Duration.between(match.getStartTime(), match.getEndTime());
+            long minutes = dur.toMinutes();
+            long seconds = dur.minusMinutes(minutes).getSeconds();
+            duration = String.format("%02d:%02d", minutes, seconds);
+        }
+
+        // Determine winner
+        String winner;
+        if (match.getScoreTeamA() > match.getScoreTeamB()) winner = "teamA";
+        else if (match.getScoreTeamB() > match.getScoreTeamA()) winner = "teamB";
+        else winner = "draw";
+
+        MatchSummaryDto summary = MatchSummaryDto.builder()
+                .matchId(match.getMatchCode())
+                .gameId(match.getGameId())
+                .startTime(match.getStartTime())
+                .endTime(match.getEndTime())
+                .duration(duration)
+                .teamA(teamADto)
+                .teamB(teamBDto)
+                .winner(winner)
+                .build();
+
+        return GenericMatchSummaryResponse.builder()
+                .success(true)
+                .data(summary)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GenericMatchTimelineResponse getMatchTimeline(String matchCode) {
+        Match match = matchRepository.findByMatchCode(matchCode)
+                .orElseThrow(() -> new RuntimeException("Match not found: " + matchCode));
+
+        LocalDateTime matchStart = match.getStartTime();
+
+        List<MatchTimelineEventDto> events = match.getEvents().stream()
+                .sorted((e1, e2) -> e1.getTimestamp().compareTo(e2.getTimestamp()))
+                .map(e -> {
+                    String time = "00:00";
+                    if (matchStart != null && e.getTimestamp() != null) {
+                        Duration dur = Duration.between(matchStart, e.getTimestamp());
+                        long minutes = dur.toMinutes();
+                        long seconds = dur.minusMinutes(minutes).getSeconds();
+                        time = String.format("%02d:%02d", minutes, seconds);
+                    }
+
+                    return MatchTimelineEventDto.builder()
+                            .timestamp(e.getTimestamp() != null ? e.getTimestamp().toString() : null)
+                            .time(time)
+                            .eventType(e.getEventType())
+                            .description(e.getDescription())
+                            .playerId(e.getPlayerCode())
+                            .teamId(e.getTeamKey())
+                            .build();
+                })
+                .toList(); // Java 16+, else use Collectors.toList()
+
+        MatchTimelineDto timeline = MatchTimelineDto.builder()
+                .events(events)
+                .build();
+
+        return GenericMatchTimelineResponse.builder()
+                .success(true)
+                .data(timeline)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GenericPlayerStatsResponse getPlayerStatistics(String matchCode) {
+        Match match = matchRepository.findByMatchCode(matchCode)
+                .orElseThrow(() -> new RuntimeException("Match not found: " + matchCode));
+
+        GameSetup gs = match.getGameSetup();
+
+        // Map Team A players
+        Team teamA = gs.getTeams().stream()
+                .filter(t -> t.getId().equals(match.getTeamAId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("TeamA not found"));
+
+        List<PlayerStatsDto> teamAStats = teamA.getPlayers().stream()
+                .map(p -> PlayerStatsDto.builder()
+                        .playerId(p.getPlayerCode())
+                        .maxSpeed("0") // placeholder if not available
+                        .penaltyTime("0:00")
+                        .ballPossessingTime("0:00")
+                        .ballControlInitiations("0")
+                        .build())
+                .toList();
+
+        // Map Team B players
+        Team teamB = gs.getTeams().stream()
+                .filter(t -> t.getId().equals(match.getTeamBId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("TeamB not found"));
+
+        List<PlayerStatsDto> teamBStats = teamB.getPlayers().stream()
+                .map(p -> PlayerStatsDto.builder()
+                        .playerId(p.getPlayerCode())
+                        .maxSpeed("0")
+                        .penaltyTime("0:00")
+                        .ballPossessingTime("0:00")
+                        .ballControlInitiations("0")
+                        .build())
+                .toList();
+
+        PlayerStatsResponseDto statsResponse = PlayerStatsResponseDto.builder()
+                .teamA(teamAStats)
+                .teamB(teamBStats)
+                .build();
+
+        return GenericPlayerStatsResponse.builder()
+                .success(true)
+                .data(statsResponse)
+                .build();
+    }
+
+
 }
