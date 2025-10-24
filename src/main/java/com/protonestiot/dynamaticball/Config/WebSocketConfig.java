@@ -1,31 +1,24 @@
 package com.protonestiot.dynamaticball.Config;
 
+import com.protonestiot.dynamaticball.Handler.MatchWebSocketHandler;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
-import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
+import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
 @Configuration
-@EnableWebSocketMessageBroker
-public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+@EnableWebSocket
+public class WebSocketConfig implements WebSocketConfigurer {
 
-    @Override
-    public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Topic-based real-time updates
-        config.enableSimpleBroker("/topic");
-        config.setApplicationDestinationPrefixes("/app");
+    private final MatchWebSocketHandler matchWebSocketHandler;
+
+    public WebSocketConfig(MatchWebSocketHandler matchWebSocketHandler) {
+        this.matchWebSocketHandler = matchWebSocketHandler;
     }
 
     @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Native WebSocket
-        registry.addEndpoint("/ws-match")
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(matchWebSocketHandler, "/ws-match")
                 .setAllowedOriginPatterns("*");
-
-        // Optional SockJS fallback (if needed for browsers)
-        registry.addEndpoint("/ws-match")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
     }
 }

@@ -2,6 +2,7 @@ package com.protonestiot.dynamaticball.Service.Impl;
 
 import com.protonestiot.dynamaticball.Dto.*;
 import com.protonestiot.dynamaticball.Entity.*;
+import com.protonestiot.dynamaticball.Handler.MatchWebSocketHandler;
 import com.protonestiot.dynamaticball.Repository.*;
 import com.protonestiot.dynamaticball.Service.MatchService;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class MatchServiceImpl implements MatchService {
     private final MatchRepository matchRepository;
     private final MatchEventRepository matchEventRepository;
     private final TeamRepository teamRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final MatchWebSocketHandler matchWebSocketHandler;
 
     private LocalDateTime parseOrNow(String iso) {
         if (iso == null) return LocalDateTime.now();
@@ -75,7 +76,12 @@ public class MatchServiceImpl implements MatchService {
                 .build();
         matchEventRepository.save(ev);
 
-        messagingTemplate.convertAndSend("/topic/match/" + match.getMatchCode(), ev);
+        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
+                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
+                "\"description\": \"" + ev.getDescription() + "\" }";
+
+        matchWebSocketHandler.broadcast(json);
+
 
         return GenericResponseDto.builder()
                 .success(true)
@@ -140,7 +146,12 @@ public class MatchServiceImpl implements MatchService {
         }
 
         if (ev != null) {
-            messagingTemplate.convertAndSend("/topic/match/" + match.getMatchCode(), ev);
+            String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
+                    "\"matchCode\": \"" + match.getMatchCode() + "\", " +
+                    "\"description\": \"" + ev.getDescription() + "\" }";
+
+            matchWebSocketHandler.broadcast(json);
+
         }
 
         return GenericResponseDto.builder().success(true).message("Action applied: " + action).id(match.getMatchCode()).build();
@@ -176,7 +187,12 @@ public class MatchServiceImpl implements MatchService {
 
         matchEventRepository.save(ev);
 
-        messagingTemplate.convertAndSend("/topic/match/" + match.getMatchCode(), ev);
+        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
+                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
+                "\"description\": \"" + ev.getDescription() + "\" }";
+
+        matchWebSocketHandler.broadcast(json);
+
 
         return GenericResponseDto.builder()
                 .success(true)
@@ -201,7 +217,12 @@ public class MatchServiceImpl implements MatchService {
                 .build();
         matchEventRepository.save(ev);
 
-        messagingTemplate.convertAndSend("/topic/match/" + match.getMatchCode(), ev);
+        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
+                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
+                "\"description\": \"" + ev.getDescription() + "\" }";
+
+        matchWebSocketHandler.broadcast(json);
+
 
         return GenericResponseDto.builder().success(true).message("Event recorded").id(match.getMatchCode()).build();
     }
@@ -221,7 +242,12 @@ public class MatchServiceImpl implements MatchService {
                 .build();
         matchEventRepository.save(ev);
 
-        messagingTemplate.convertAndSend("/topic/match/" + match.getMatchCode(), ev);
+        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
+                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
+                "\"description\": \"" + ev.getDescription() + "\" }";
+
+        matchWebSocketHandler.broadcast(json);
+
 
         return GenericResponseDto.builder().success(true).message("Halftime recorded").id(match.getMatchCode()).build();
     }
