@@ -6,6 +6,7 @@ import com.protonestiot.dynamaticball.Entity.Team;
 import com.protonestiot.dynamaticball.Repository.PlayerRepository;
 import com.protonestiot.dynamaticball.Repository.TeamRepository;
 import com.protonestiot.dynamaticball.Service.PlayerService;
+import com.protonestiot.dynamaticball.Handler.MatchWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,22 +17,17 @@ public class PlayerServiceImpl implements PlayerService {
 
     private final PlayerRepository playerRepository;
     private final TeamRepository teamRepository;
+    private final MatchWebSocketHandler matchWebSocketHandler;
 
     @Override
     @Transactional
     public Player addPlayer(PlayerRequestDto dto) {
-        if (dto == null) {
-            throw new RuntimeException("Player data cannot be null");
-        }
+        if (dto == null) throw new RuntimeException("Player data cannot be null");
 
-        // Find team
         Team team = teamRepository.findById(dto.getTeamId())
                 .orElseThrow(() -> new RuntimeException("Team not found: " + dto.getTeamId()));
 
-        // Get allowed players per team from Game configuration
-        int playersPerTeam = team.getGameSetup().getPlayersPerTeam(); // adjust field name if needed
-
-        // Count how many players are already in this team
+        int playersPerTeam = team.getGameSetup().getPlayersPerTeam();
         long currentCount = playerRepository.countByTeam(team);
 
         if (currentCount >= playersPerTeam) {
@@ -41,19 +37,6 @@ public class PlayerServiceImpl implements PlayerService {
             );
         }
 
-        // (Optional) Ensure both teams in same game are balanced
-        /*if (team.getGameSetup() != null && team.getGameSetup().getTeams() != null) {
-            for (Team otherTeam : team.getGameSetup().getTeams()) {
-                if (!otherTeam.getId().equals(team.getId())) {
-                    long otherCount = playerRepository.countByTeam(otherTeam);
-                    if (Math.abs(currentCount + 1 - otherCount) > 1) {
-                        throw new RuntimeException("Teams must have equal number of players.");
-                    }
-                }
-            }
-        } */
-
-        // Create player
         Player player = Player.builder()
                 .playerCode(dto.getPlayerId())
                 .belt(dto.getBelt())
@@ -63,7 +46,11 @@ public class PlayerServiceImpl implements PlayerService {
                 .team(team)
                 .build();
 
-        return playerRepository.save(player);
+        Player saved = playerRepository.save(player);
+
+        broadcastPlayerChange("add", saved);
+
+        return saved;
     }
 
     @Override
@@ -83,15 +70,36 @@ public class PlayerServiceImpl implements PlayerService {
             player.setTeam(team);
         }
 
-        return playerRepository.save(player);
+        Player saved = playerRepository.save(player);
+
+        broadcastPlayerChange("update", saved);
+
+        return saved;
     }
 
     @Override
     @Transactional
     public void deletePlayerById(Long id) {
-        if (!playerRepository.existsById(id)) {
-            throw new RuntimeException("Player not found with ID: " + id);
-        }
+        Player player = playerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + id));
+
         playerRepository.deleteById(id);
+
+        broadcastPlayerChange("delete", player);
+    }
+
+    // --- Helper method to broadcast WebSocket messages ---
+    private void broadcastPlayerChange(String action, Player player) {
+        String json = "{ " +
+                "\"event\": \"" + action + "\"," +
+                "\"playerId\": \"" + player.getPlayerCode() + "\"," +
+                "\"teamId\": \"" + player.getTeam().getId() + "\"," +
+                "\"belt\": \"" + player.getBelt() + "\"," +
+                "\"rightWristband\": \"" + player.getRightWristband() + "\"," +
+                "\"leftWristband\": \"" + player.getLeftWristband() + "\"," +
+                "\"camera\": \"" + player.getCamera() + "\"" +
+                " }";
+
+        matchWebSocketHandler.broadcast(json);
     }
 }

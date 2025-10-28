@@ -75,7 +75,7 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    // ✅ Fetch paginated + searchable user list
+    // Fetch paginated + searchable user list
     public Map<String, Object> getUsers(int page, int limit, String search) {
 
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
