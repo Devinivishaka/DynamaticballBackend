@@ -5,6 +5,8 @@ import com.protonestiot.dynamaticball.Dto.LoginRequest;
 import com.protonestiot.dynamaticball.Dto.LoginResponse;
 import com.protonestiot.dynamaticball.Entity.User;
 import com.protonestiot.dynamaticball.Entity.VerificationToken;
+import com.protonestiot.dynamaticball.Exception.OtpExpiredException;
+import com.protonestiot.dynamaticball.Exception.OtpInvalidException;
 import com.protonestiot.dynamaticball.Repository.UserRepository;
 import com.protonestiot.dynamaticball.Repository.VerificationTokenRepository;
 import com.protonestiot.dynamaticball.Service.CustomUserDetailsService;
@@ -13,16 +15,22 @@ import com.protonestiot.dynamaticball.util.JwtHelper;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.SecureRandom;
 import java.util.Date;
 import java.util.List;
+import java.util.Random; // For OTP generation
+import com.protonestiot.dynamaticball.Exception.EmailSendException; // Your custom exception
+
 
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
+
 
     @Autowired
     private UserRepository userRepository;
@@ -50,21 +58,27 @@ public class AuthController {
     // ---------------- LOGIN ----------------
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
-        User user = userRepository.findByUsernameIgnoreCase(loginRequest.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // Find user by username (case-insensitive)
+        User user = userRepository.findByUsernameIgnoreCase(loginRequest.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        // Check password (no encoding as per requirement)
         if (!user.getPassword().equals(loginRequest.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new BadCredentialsException("Invalid credentials");
         }
 
+        // Load user details for JWT
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-        String jwt = jwtUtil.generateToken(userDetails);
-        List<String> roles = List.of(user.getRole().name());
-        LoginResponse response = new LoginResponse(jwt, roles);
 
-        return ResponseEntity.ok()
-                .header("Set-Cookie", "jwtToken=" + jwt + "; HttpOnly; Path=/; Max-Age=86400; SameSite=None; Secure")
-                .body(response);
+        // Generate JWT token
+        String jwt = jwtUtil.generateToken(userDetails);
+
+        // Get user roles
+        List<String> roles = List.of(user.getRole().name());
+
+        // Return response
+        return ResponseEntity.ok(new LoginResponse(jwt, roles));
     }
 
     @GetMapping("/logout")
@@ -74,19 +88,17 @@ public class AuthController {
                 .body("Logged out successfully");
     }
 
-    // ---------------- PASSWORD RESET ----------------
+    // ---------------- REQUEST OTP ----------------
     @PostMapping("/reset-password/request")
-    public ResponseEntity<String> requestOtp(@RequestBody ForgetPassword request) throws MessagingException {
+    public ResponseEntity<?> requestOtp(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + request.getEmail()));
 
-        // 1️⃣ Generate OTP
-        String otp = generateOtp();
-
-        // 2️⃣ Hash OTP before saving (safer than storing plain OTP)
+        // Generate OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
         String otpHash = String.valueOf(otp.hashCode());
 
-        // 3️⃣ Check existing token
+        // Check existing token
         VerificationToken token = tokenRepository.findByUser(user);
         if (token == null) {
             token = new VerificationToken();
@@ -97,54 +109,55 @@ public class AuthController {
         token.setExpiryDate(new Date(System.currentTimeMillis() + OTP_EXPIRATION_MS));
         tokenRepository.save(token);
 
-        // 4️⃣ Send plain OTP to email
-        emailService.sendOtpEmail(user.getUsername(), otp);
+        // Send OTP via email
+        try {
+            emailService.sendOtpEmail(user.getUsername(), otp);
+        } catch (MessagingException e) {
+            throw new EmailSendException("Failed to send OTP email");
+        }
 
-        return ResponseEntity.ok("OTP sent to your email.");
+        return ResponseEntity.ok().body("OTP sent to your email.");
     }
 
-
+    // ---------------- VALIDATE OTP ----------------
     @PostMapping("/reset-password/validate")
-    public ResponseEntity<String> validateOtp(@RequestBody ForgetPassword request) {
+    public ResponseEntity<?> validateOtp(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         VerificationToken token = tokenRepository.findByUser(user);
-        if (token == null) return ResponseEntity.badRequest().body("No OTP found.");
-        if (token.getExpiryDate().before(new Date())) return ResponseEntity.badRequest().body("OTP expired");
+        if (token == null) throw new OtpInvalidException("No OTP found.");
+        if (token.getExpiryDate().before(new Date())) throw new OtpExpiredException("OTP expired");
 
-        // Compare hashes instead of plain values
         String inputHash = String.valueOf(request.getToken().hashCode());
-        if (!inputHash.equals(token.getOtpHash())) return ResponseEntity.badRequest().body("Invalid OTP");
+        if (!inputHash.equals(token.getOtpHash())) throw new OtpInvalidException("Invalid OTP");
 
-        return ResponseEntity.ok("OTP is valid");
+        return ResponseEntity.ok().body("OTP is valid");
     }
 
-
+    // ---------------- RESET PASSWORD ----------------
     @PostMapping("/reset-password/reset")
-    public ResponseEntity<String> resetPassword(@RequestBody ForgetPassword request) {
+    public ResponseEntity<?> resetPassword(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         VerificationToken token = tokenRepository.findByUser(user);
-        if (token == null) return ResponseEntity.badRequest().body("No OTP found.");
-        if (token.getExpiryDate().before(new Date())) return ResponseEntity.badRequest().body("OTP expired");
+        if (token == null) throw new OtpInvalidException("No OTP found.");
+        if (token.getExpiryDate().before(new Date())) throw new OtpExpiredException("OTP expired");
 
-        // Compare OTP hashes
         String inputHash = String.valueOf(request.getToken().hashCode());
-        if (!inputHash.equals(token.getOtpHash())) return ResponseEntity.badRequest().body("Invalid OTP");
+        if (!inputHash.equals(token.getOtpHash())) throw new OtpInvalidException("Invalid OTP");
 
         if (!request.getPassword().equals(request.getConfirmPassword()))
-            return ResponseEntity.badRequest().body("Passwords do not match");
+            throw new IllegalArgumentException("Passwords do not match");
 
         // Save new password
         user.setPassword(request.getPassword());
         userRepository.save(user);
 
-        token.setExpiryDate(new Date(System.currentTimeMillis() - 1000));
+        token.setExpiryDate(new Date(System.currentTimeMillis() - 1000)); // expire token
         tokenRepository.save(token);
 
-        return ResponseEntity.ok("Password reset successfully");
+        return ResponseEntity.ok().body("Password reset successfully");
     }
-
 }

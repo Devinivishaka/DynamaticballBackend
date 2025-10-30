@@ -19,4 +19,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
             String username,
             Pageable pageable
     );
+
 }
