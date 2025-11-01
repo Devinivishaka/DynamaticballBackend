@@ -60,12 +60,15 @@ public class User {
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (lastLogin == null) lastLogin = LocalDateTime.now();
+    }
 
-        //  Automatically set formatted userId when inserting
+    @PostPersist
+    protected void onPostPersist() {
         if (this.userId == null) {
-            this.userId = generateUserId();
+            this.userId = String.format("U_%03d", this.id);
         }
     }
+
 
     //  Generate formatted ID (temporary if not from repository)
     private String generateUserId() {

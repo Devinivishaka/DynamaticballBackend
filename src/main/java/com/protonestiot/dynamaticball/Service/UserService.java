@@ -26,10 +26,6 @@ public class UserService {
 
         user.setRole(Role.REFEREE);
 
-        //  Generate formatted ID based on user count
-        long count = userRepository.count() + 1;
-        user.setUserId(String.format("U_%03d", count));
-
         return userRepository.save(user);
     }
 

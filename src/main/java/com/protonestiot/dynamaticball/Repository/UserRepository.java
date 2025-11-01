@@ -12,7 +12,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
    boolean existsByUsername(String username);
 
 
-    // ✅ Custom search by name or username
+    //  Custom search by name or username
     Page<User> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrUsernameContainingIgnoreCase(
             String firstName,
             String lastName,

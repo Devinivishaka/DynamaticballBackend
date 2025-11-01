@@ -83,10 +83,9 @@ public class AuthController {
 
     @GetMapping("/logout")
     public ResponseEntity<String> logout() {
-        return ResponseEntity.ok()
-                .header("Set-Cookie", "jwtToken=; HttpOnly; Path=/; Max-Age=0; SameSite=None; Secure")
-                .body("Logged out successfully");
+        return ResponseEntity.ok("Logout successful (client-side token cleared)");
     }
+
 
     // ---------------- REQUEST OTP ----------------
     @PostMapping("/reset-password/request")

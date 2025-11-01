@@ -38,4 +38,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         );
     }
 
+
+    public UserDetails getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String doctorId = auth.getName();
+        return loadUserByUsername(doctorId);
+    }
+
 }
