@@ -13,159 +13,55 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
-
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    // Common method to build error response
+    private ResponseEntity<ErrorResponseDto> buildError(String error, String message, HttpStatus status, HttpServletRequest request) {
+        ErrorResponseDto body = new ErrorResponseDto(false, status.value(), error, message, request.getRequestURI());
+        return new ResponseEntity<>(body, status);
+    }
 
-    // ------------- Username not found -------------
+    // ---------------- Login/User exceptions ----------------
     @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleUserNotFoundException(UsernameNotFoundException ex,
-                                                                        HttpServletRequest request) {
-        ErrorResponseDto error = new ErrorResponseDto(
-                false,
-                HttpStatus.NOT_FOUND.value(),
-                "User Not Found",
-                "The username you entered does not exist.",
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    public ResponseEntity<ErrorResponseDto> handleUserNotFound(UsernameNotFoundException ex, HttpServletRequest request) {
+        return buildError("User Not Found", ex.getMessage(), HttpStatus.NOT_FOUND, request);
     }
 
-    // ------------- Invalid credentials -------------
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponseDto> handleBadCredentials(BadCredentialsException ex,
-                                                                 HttpServletRequest request) {
-        ErrorResponseDto error = new ErrorResponseDto(
-                false,
-                HttpStatus.UNAUTHORIZED.value(),
-                "Invalid Credentials",
-                "The username or password you entered is incorrect.",
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+    public ResponseEntity<ErrorResponseDto> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+        return buildError("Invalid Credentials", ex.getMessage(), HttpStatus.UNAUTHORIZED, request);
     }
 
-    // ------------- JWT expired -------------
+    // ---------------- JWT exceptions ----------------
     @ExceptionHandler(ExpiredJwtException.class)
-    public ResponseEntity<ErrorResponseDto> handleJwtExpired(ExpiredJwtException ex,
-                                                             HttpServletRequest request) {
-        ErrorResponseDto error = new ErrorResponseDto(
-                false,
-                HttpStatus.UNAUTHORIZED.value(),
-                "JWT Token Expired",
-                "Your authentication token has expired. Please login again.",
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+    public ResponseEntity<ErrorResponseDto> handleJwtExpired(ExpiredJwtException ex, HttpServletRequest request) {
+        return buildError("JWT Token Expired", "Your authentication token has expired. Please login again.", HttpStatus.UNAUTHORIZED, request);
     }
 
-    // ------------- Malformed or invalid JWT -------------
     @ExceptionHandler({MalformedJwtException.class, SignatureException.class})
-    public ResponseEntity<ErrorResponseDto> handleJwtMalformed(Exception ex,
-                                                               HttpServletRequest request) {
-        ErrorResponseDto error = new ErrorResponseDto(
-                false,
-                HttpStatus.UNAUTHORIZED.value(),
-                "Invalid JWT Token",
-                "The provided authentication token is invalid.",
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+    public ResponseEntity<ErrorResponseDto> handleJwtMalformed(Exception ex, HttpServletRequest request) {
+        return buildError("Invalid JWT Token", "The provided authentication token is invalid.", HttpStatus.UNAUTHORIZED, request);
     }
 
-    // ------------- Validation Errors -------------
+    // ---------------- Validation errors ----------------
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseDto> handleValidationErrors(MethodArgumentNotValidException ex,
-                                                                   HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleValidationErrors(MethodArgumentNotValidException ex, HttpServletRequest request) {
         String message = ex.getBindingResult().getFieldErrors()
-                .stream()
-                .map(f -> f.getField() + ": " + f.getDefaultMessage())
-                .findFirst()
-                .orElse("Validation failed for the request.");
-
-        ErrorResponseDto error = new ErrorResponseDto(
-                false,
-                HttpStatus.BAD_REQUEST.value(),
-                "Validation Error",
-                message,
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+                .stream().map(f -> f.getField() + ": " + f.getDefaultMessage())
+                .findFirst().orElse("Validation failed for the request.");
+        return buildError("Validation Error", message, HttpStatus.BAD_REQUEST, request);
     }
 
-    // ------------- Catch-all Exception -------------
+    // ---------------- Other common exceptions ----------------
+    @ExceptionHandler({IllegalArgumentException.class, RuntimeException.class})
+    public ResponseEntity<ErrorResponseDto> handleCommonExceptions(Exception ex, HttpServletRequest request) {
+        return buildError("Error", ex.getMessage(), HttpStatus.BAD_REQUEST, request);
+    }
+
+    // ---------------- Catch-all ----------------
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDto> handleAllExceptions(Exception ex,
-                                                                HttpServletRequest request) {
-        ErrorResponseDto error = new ErrorResponseDto(
-                false,
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Internal Server Error",
-                ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred.",
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
-
+    public ResponseEntity<ErrorResponseDto> handleAll(Exception ex, HttpServletRequest request) {
+        return buildError("Internal Server Error", ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
-
-    // Otp invalid
-    @ExceptionHandler(OtpInvalidException.class)
-    public ResponseEntity<ErrorResponseDto> handleOtpInvalid(OtpInvalidException ex,
-                                                             HttpServletRequest request) {
-        ErrorResponseDto error = new ErrorResponseDto(
-                false,
-                HttpStatus.BAD_REQUEST.value(),
-                "Invalid OTP",
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-    }
-
-    // Otp expired
-    @ExceptionHandler(OtpExpiredException.class)
-    public ResponseEntity<ErrorResponseDto> handleOtpExpired(OtpExpiredException ex,
-                                                             HttpServletRequest request) {
-        ErrorResponseDto error = new ErrorResponseDto(
-                false,
-                HttpStatus.BAD_REQUEST.value(),
-                "OTP expired",
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-    }
-
-    // Email sending failed
-    @ExceptionHandler(EmailSendException.class)
-    public ResponseEntity<ErrorResponseDto> handleEmailSend(EmailSendException ex,
-                                                            HttpServletRequest request) {
-        ErrorResponseDto error = new ErrorResponseDto(
-                false,
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Email sending failed",
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    // ------------- Illegal Argument Exception -------------
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponseDto> handleIllegalArgumentException(IllegalArgumentException ex,
-                                                                           HttpServletRequest request) {
-        ErrorResponseDto error = new ErrorResponseDto(
-                false,
-                HttpStatus.BAD_REQUEST.value(),
-                "Invalid Input",
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-    }
-
-
 }
