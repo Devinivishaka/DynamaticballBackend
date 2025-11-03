@@ -1,6 +1,7 @@
 package com.protonestiot.dynamaticball.Controller;
 
 import com.protonestiot.dynamaticball.Dto.RefereeResponseDto;
+import com.protonestiot.dynamaticball.Dto.UserDto;
 import com.protonestiot.dynamaticball.Entity.User;
 import com.protonestiot.dynamaticball.Service.UserService;
 import jakarta.validation.Valid;
@@ -10,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -25,30 +27,40 @@ public class UserController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) String search)
-
     {
         return ResponseEntity.ok(userService.getUsers(page, limit, search));
     }
 
-
+    // ---------------- ADD REFEREE ----------------
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/referees")
-    public ResponseEntity<User> addReferee(@RequestBody @Valid User user) {
-        return ResponseEntity.ok(userService.addReferee(user));
+    public ResponseEntity<User> addReferee(@RequestBody @Valid UserDto userDto) {
+        return ResponseEntity.ok(userService.addReferee(userDto));
     }
 
+    // ---------------- GET ALL REFEREES ----------------
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/referees")
     public ResponseEntity<List<RefereeResponseDto>> getAllReferees() {
         return ResponseEntity.ok(userService.getAllRefereesDto());
     }
 
+    // ---------------- GET USER BY ID ----------------
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @PutMapping("/referees/{id}")
-    public ResponseEntity<User> updateReferee(@PathVariable Long id, @RequestBody User user) {
-        return ResponseEntity.ok(userService.updateReferee(id, user));
+    @GetMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
+
+    // ---------------- UPDATE REFEREE ----------------
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PutMapping("/referees/{id}")
+    public ResponseEntity<User> updateReferee(@PathVariable Long id, @RequestBody @Valid UserDto userDto) {
+        return ResponseEntity.ok(userService.updateReferee(id, userDto));
+    }
+
+    // ---------------- DELETE REFEREE ----------------
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @DeleteMapping("/referees/{id}")
     public ResponseEntity<String> deleteReferee(@PathVariable Long id) {

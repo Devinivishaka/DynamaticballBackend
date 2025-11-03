@@ -1,14 +1,12 @@
 package com.protonestiot.dynamaticball.Service;
 
 import com.protonestiot.dynamaticball.Dto.RefereeResponseDto;
+import com.protonestiot.dynamaticball.Dto.UserDto;
 import com.protonestiot.dynamaticball.Entity.Role;
 import com.protonestiot.dynamaticball.Entity.User;
 import com.protonestiot.dynamaticball.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -21,22 +19,19 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    // Add referee (only SUPER_ADMIN can call this)
-    public User addReferee(User user) {
-
+    // Add referee
+    public User addReferee(UserDto userDto) {
+        User user = new User();
+        user.setFirstName(userDto.getFirstName());
+        user.setLastName(userDto.getLastName());
+        user.setUsername(userDto.getUsername());
+        user.setPassword(userDto.getPassword()); // plain password
         user.setRole(Role.REFEREE);
 
         return userRepository.save(user);
     }
 
-    // Get all referees (raw User objects - not used in controller anymore)
-    public List<User> getAllReferees() {
-        return userRepository.findAll().stream()
-                .filter(user -> user.getRole() == Role.REFEREE)
-                .toList();
-    }
-
-    // Get all referees as DTOs (Super Admin view with password)
+    // Get all referees as DTO
     public List<RefereeResponseDto> getAllRefereesDto() {
         return userRepository.findAll().stream()
                 .filter(user -> user.getRole() == Role.REFEREE)
@@ -52,26 +47,27 @@ public class UserService {
     }
 
     // Update referee
-    public User updateReferee(Long id, User updatedUser) {
+    public User updateReferee(Long id, UserDto userDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Referee not found"));
 
-        if (updatedUser.getFirstName() != null) user.setFirstName(updatedUser.getFirstName());
-        if (updatedUser.getLastName() != null) user.setLastName(updatedUser.getLastName());
-        if (updatedUser.getUsername() != null) user.setUsername(updatedUser.getUsername());
-        if (updatedUser.getPassword() != null) {
-            // Store plain password (no encoding)
-            user.setPassword(updatedUser.getPassword());
-        }
+        if (userDto.getFirstName() != null) user.setFirstName(userDto.getFirstName());
+        if (userDto.getLastName() != null) user.setLastName(userDto.getLastName());
+        if (userDto.getUsername() != null) user.setUsername(userDto.getUsername());
+        if (userDto.getPassword() != null) user.setPassword(userDto.getPassword()); // plain password
+
         return userRepository.save(user);
     }
 
-    // Delete referee
+    // Delete referee with proper validation
     public void deleteReferee(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("Referee not found with ID: " + id);
+        }
         userRepository.deleteById(id);
     }
 
-    // Fetch paginated + searchable user list
+    // Paginated + searchable user list
     public Map<String, Object> getUsers(int page, int limit, String search) {
 
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
@@ -85,7 +81,6 @@ public class UserService {
             usersPage = userRepository.findAll(pageable);
         }
 
-        //  Format response
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
 
@@ -104,10 +99,18 @@ public class UserService {
         return response;
     }
 
-    //  Convert User entity to response format
+    // Fetch user by ID (SUPER_ADMIN only)
+    public Map<String, Object> getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return convertToUserResponse(user);
+    }
+
+
+    // Convert User entity to response
     private Map<String, Object> convertToUserResponse(User user) {
         Map<String, Object> userMap = new LinkedHashMap<>();
-
         userMap.put("userId", user.getUserId());
         userMap.put("firstName", user.getFirstName());
         userMap.put("lastName", user.getLastName());
@@ -116,5 +119,4 @@ public class UserService {
         userMap.put("lastLogin", user.getLastLogin());
         return userMap;
     }
-
 }
