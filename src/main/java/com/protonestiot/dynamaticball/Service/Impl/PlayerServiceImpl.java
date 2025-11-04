@@ -88,7 +88,7 @@ public class PlayerServiceImpl implements PlayerService {
         broadcastPlayerChange("delete", player);
     }
 
-    // --- Helper method to broadcast WebSocket messages ---
+
     private void broadcastPlayerChange(String action, Player player) {
         String json = "{ " +
                 "\"event\": \"" + action + "\"," +

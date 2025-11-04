@@ -20,7 +20,7 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    // ---------------- USER CRUD ----------------
+
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping
     public ResponseEntity<?> getUsers(
@@ -31,21 +31,21 @@ public class UserController {
         return ResponseEntity.ok(userService.getUsers(page, limit, search));
     }
 
-    // ---------------- ADD REFEREE ----------------
+
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/referees")
     public ResponseEntity<User> addReferee(@RequestBody @Valid UserDto userDto) {
         return ResponseEntity.ok(userService.addReferee(userDto));
     }
 
-    // ---------------- GET ALL REFEREES ----------------
+
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/referees")
     public ResponseEntity<List<RefereeResponseDto>> getAllReferees() {
         return ResponseEntity.ok(userService.getAllRefereesDto());
     }
 
-    // ---------------- GET USER BY ID ----------------
+
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getUserById(@PathVariable Long id) {
@@ -53,14 +53,14 @@ public class UserController {
     }
 
 
-    // ---------------- UPDATE REFEREE ----------------
+
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PutMapping("/referees/{id}")
     public ResponseEntity<User> updateReferee(@PathVariable Long id, @RequestBody @Valid UserDto userDto) {
         return ResponseEntity.ok(userService.updateReferee(id, userDto));
     }
 
-    // ---------------- DELETE REFEREE ----------------
+
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @DeleteMapping("/referees/{id}")
     public ResponseEntity<String> deleteReferee(@PathVariable Long id) {

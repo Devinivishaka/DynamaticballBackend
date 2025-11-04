@@ -252,7 +252,7 @@ public class MatchServiceImpl implements MatchService {
         return GenericResponseDto.builder().success(true).message("Halftime recorded").id(match.getMatchCode()).build();
     }
 
-    // New method to get latest match status
+
     public MatchStatusDto getMatchStatus(String matchCode) {
         Match match = matchRepository.findByMatchCode(matchCode)
                 .orElseThrow(() -> new RuntimeException("Match not found: " + matchCode));
@@ -283,7 +283,7 @@ public class MatchServiceImpl implements MatchService {
 
         GameSetup gs = match.getGameSetup();
 
-        // Map team A
+
         Team teamA = gs.getTeams().stream()
                 .filter(t -> t.getId().equals(match.getTeamAId()))
                 .findFirst()
@@ -304,7 +304,7 @@ public class MatchServiceImpl implements MatchService {
                         .collect(Collectors.toList()))
                 .build();
 
-        // Map team B
+
         Team teamB = gs.getTeams().stream()
                 .filter(t -> t.getId().equals(match.getTeamBId()))
                 .findFirst()
@@ -325,7 +325,7 @@ public class MatchServiceImpl implements MatchService {
                         .collect(Collectors.toList()))
                 .build();
 
-        // Compute duration
+
         String duration = "00:00";
         if (match.getStartTime() != null && match.getEndTime() != null) {
             Duration dur = Duration.between(match.getStartTime(), match.getEndTime());
@@ -334,7 +334,7 @@ public class MatchServiceImpl implements MatchService {
             duration = String.format("%02d:%02d", minutes, seconds);
         }
 
-        // Determine winner
+
         String winner;
         if (match.getScoreTeamA() > match.getScoreTeamB()) winner = "teamA";
         else if (match.getScoreTeamB() > match.getScoreTeamA()) winner = "teamB";
@@ -405,7 +405,7 @@ public class MatchServiceImpl implements MatchService {
 
         GameSetup gs = match.getGameSetup();
 
-        // Map Team A players
+
         Team teamA = gs.getTeams().stream()
                 .filter(t -> t.getId().equals(match.getTeamAId()))
                 .findFirst()
@@ -421,7 +421,7 @@ public class MatchServiceImpl implements MatchService {
                         .build())
                 .toList();
 
-        // Map Team B players
+
         Team teamB = gs.getTeams().stream()
                 .filter(t -> t.getId().equals(match.getTeamBId()))
                 .findFirst()

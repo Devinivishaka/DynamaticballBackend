@@ -21,7 +21,7 @@ public class MatchWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         System.out.println("Received message: " + message.getPayload());
-        // Echo back if needed
+
         session.sendMessage(new TextMessage("{\"msg\":\"Server received: " + message.getPayload() + "\"}"));
     }
 

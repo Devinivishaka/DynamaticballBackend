@@ -9,14 +9,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MatchSummaryDto {
-    private String matchId;               // match.matchCode
-    private String gameId;                // match.gameId
+    private String matchId;
+    private String gameId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private String duration;              // e.g., "45:00" computed from startTime & endTime
+    private String duration;
     private TeamSummaryDto teamA;
     private TeamSummaryDto teamB;
-    private String winner;                // "teamA" / "teamB" / "draw"
+    private String winner;
 }
 
 

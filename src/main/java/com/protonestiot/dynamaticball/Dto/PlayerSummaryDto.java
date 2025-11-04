@@ -10,8 +10,8 @@ import lombok.*;
 public class PlayerSummaryDto {
     private String playerId;
     private double maxSpeed;
-    private String penaltyTime;           // e.g., "2:30"
-    private String ballPossessingTime;    // e.g., "8:45"
+    private String penaltyTime;
+    private String ballPossessingTime;
     private int ballControlInitiations;   // number of times player initiated ball control
 }
 

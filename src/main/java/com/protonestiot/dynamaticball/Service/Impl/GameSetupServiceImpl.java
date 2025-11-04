@@ -41,18 +41,18 @@ public class GameSetupServiceImpl implements GameSetupService {
         if (requestDto.getGameSettings().getPenaltyTime() < 0)
             throw new GameSetupException("Penalty time must be 0 or greater.");
 
-        // STEP 2: Connect Ball — ensure non-null and non-blank
+
         if (requestDto.getConnectBall() == null ||
                 isEmpty(requestDto.getConnectBall().getSelectedBall()))
             throw new GameSetupException("A ball must be selected before continuing.");
 
-        // STEP 3: Connect Goals — ensure non-null and non-blank
+
         if (requestDto.getConnectGoals() == null
                 || isEmpty(requestDto.getConnectGoals().getGoal1())
                 || isEmpty(requestDto.getConnectGoals().getGoal2()))
             throw new GameSetupException("Both goals must be connected (goal1 and goal2) before adding teams.");
 
-        // STEP 4: Teams — names, color & goal required; players optional (added later)
+
         if (requestDto.getTeams() == null
                 || requestDto.getTeams().getTeamA() == null
                 || requestDto.getTeams().getTeamB() == null)
@@ -73,7 +73,7 @@ public class GameSetupServiceImpl implements GameSetupService {
         if (isEmpty(requestDto.getTeams().getTeamB().getGoal()))
             throw new GameSetupException("Team B goal must be assigned.");
 
-        // All validations passed -> map and save
+
         GameSetup entity = GameSetupMapper.toEntity(requestDto);
 
         long count = gameSetupRepository.countBySetupCodeIsNotNull() + 1;

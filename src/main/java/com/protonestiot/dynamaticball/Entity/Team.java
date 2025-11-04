@@ -20,12 +20,12 @@ public class Team {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // "teamA" or "teamB" (business key)
+    // "teamA" or "teamB"
     private String teamKey;
 
     private String name;
-    private String color; // PURPLE/PINK
-    private String goal; // GOAL_1 etc.
+    private String color;
+    private String goal;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_setup_id")

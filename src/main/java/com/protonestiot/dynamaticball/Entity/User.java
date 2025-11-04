@@ -55,7 +55,7 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    // Auto-set timestamps
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
@@ -70,9 +70,8 @@ public class User {
     }
 
 
-    //  Generate formatted ID (temporary if not from repository)
+
     private String generateUserId() {
-        // You can customize logic, e.g., based on timestamp or sequence
         return String.format("U_%03d", (int) (System.currentTimeMillis() % 1000));
     }
 

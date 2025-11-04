@@ -8,10 +8,10 @@ import lombok.Setter;
 @Setter
 @Builder
 public class MatchTimelineEventDto {
-    private String timestamp; // ISO string
-    private String time;      // "mm:ss" from match start
+    private String timestamp;
+    private String time;
     private String eventType;
     private String description;
-    private String playerId;  // optional
-    private String teamId;    // optional, "teamA" or "teamB"
+    private String playerId;
+    private String teamId;
 }

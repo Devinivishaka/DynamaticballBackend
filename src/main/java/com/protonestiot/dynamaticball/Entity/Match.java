@@ -24,9 +24,9 @@ public class Match {
     @Column(unique = true, nullable = false)
     private String matchCode;
 
-    // nullable, set when match is ended
+
     @Column(unique = true)
-    private String gameId; // e.g. G_001
+    private String gameId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_setup_id")
@@ -36,14 +36,14 @@ public class Match {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    // NOT_STARTED, ACTIVE, PAUSED, ENDED
+
     private String status;
 
-    // snapshot scores
+
     private int scoreTeamA;
     private int scoreTeamB;
 
-    // store team ids (optional snapshot)
+
     private Long teamAId;
     private Long teamBId;
 
@@ -51,7 +51,7 @@ public class Match {
     @Builder.Default
     private List<MatchEvent> events = new ArrayList<>();
 
-    // helper - generate a G_ formatted id based on DB id (only call after entity has an id)
+
     public void ensureGameId() {
         if (this.gameId == null && this.id != null) {
             this.gameId = String.format("G_%03d", this.id);

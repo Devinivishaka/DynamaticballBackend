@@ -27,7 +27,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        //  Update lastLogin on successful lookup (login)
+
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
 

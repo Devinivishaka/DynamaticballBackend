@@ -24,7 +24,7 @@ public class GameHistoryService {
 
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "endTime"));
 
-        // 🟩 Build list of Specifications dynamically
+
         List<Specification<Match>> specs = new ArrayList<>();
 
         specs.add((root, query, cb) -> cb.equal(root.get("status"), "ENDED"));
@@ -50,7 +50,7 @@ public class GameHistoryService {
             specs.add((root, query, cb) -> cb.equal(root.get("gameId"), gameId));
         }
 
-        // 🆕 Use Specification.allOf() instead of deprecated where()
+
         Specification<Match> finalSpec = Specification.allOf(specs);
 
         Page<Match> matchPage = matchRepository.findAll(finalSpec, pageable);

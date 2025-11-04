@@ -73,7 +73,7 @@ public class AuthController {
         return ResponseEntity.ok("Logout successful (client-side token cleared)");
     }
 
-    // ---------------- REQUEST OTP ----------------
+
     @PostMapping("/reset-password/request")
     public ResponseEntity<String> requestOtp(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
@@ -101,7 +101,7 @@ public class AuthController {
         return ResponseEntity.ok("OTP sent to your email.");
     }
 
-    // ---------------- VALIDATE OTP ----------------
+
     @PostMapping("/reset-password/validate")
     public ResponseEntity<String> validateOtp(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
@@ -117,7 +117,7 @@ public class AuthController {
         return ResponseEntity.ok("OTP is valid");
     }
 
-    // ---------------- RESET PASSWORD ----------------
+
     @PostMapping("/reset-password/reset")
     public ResponseEntity<String> resetPassword(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())

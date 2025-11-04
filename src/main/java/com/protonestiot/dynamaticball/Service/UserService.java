@@ -19,19 +19,19 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    // Add referee
+
     public User addReferee(UserDto userDto) {
         User user = new User();
         user.setFirstName(userDto.getFirstName());
         user.setLastName(userDto.getLastName());
         user.setUsername(userDto.getUsername());
-        user.setPassword(userDto.getPassword()); // plain password
+        user.setPassword(userDto.getPassword());
         user.setRole(Role.REFEREE);
 
         return userRepository.save(user);
     }
 
-    // Get all referees as DTO
+
     public List<RefereeResponseDto> getAllRefereesDto() {
         return userRepository.findAll().stream()
                 .filter(user -> user.getRole() == Role.REFEREE)
@@ -46,7 +46,7 @@ public class UserService {
                 .toList();
     }
 
-    // Update referee
+
     public User updateReferee(Long id, UserDto userDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Referee not found"));
@@ -59,7 +59,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    // Delete referee with proper validation
+
     public void deleteReferee(Long id) {
         if (!userRepository.existsById(id)) {
             throw new RuntimeException("Referee not found with ID: " + id);
@@ -67,7 +67,7 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    // Paginated + searchable user list
+
     public Map<String, Object> getUsers(int page, int limit, String search) {
 
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
@@ -99,7 +99,7 @@ public class UserService {
         return response;
     }
 
-    // Fetch user by ID (SUPER_ADMIN only)
+
     public Map<String, Object> getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -108,7 +108,7 @@ public class UserService {
     }
 
 
-    // Convert User entity to response
+
     private Map<String, Object> convertToUserResponse(User user) {
         Map<String, Object> userMap = new LinkedHashMap<>();
         userMap.put("userId", user.getUserId());

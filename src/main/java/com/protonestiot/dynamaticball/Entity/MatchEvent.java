@@ -27,8 +27,7 @@ public class MatchEvent {
     private String eventType; // match_start, goal, possession_change, halftime, pause, resume, stop
     private String description;
 
-    private String playerCode; // optional
-    private String teamKey; // "teamA" or "teamB" (optional)
-
+    private String playerCode;
+    private String teamKey;
     private LocalDateTime timestamp;
 }

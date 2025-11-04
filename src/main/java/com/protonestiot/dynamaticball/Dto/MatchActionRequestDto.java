@@ -8,5 +8,5 @@ import lombok.*;
 @AllArgsConstructor
 public class MatchActionRequestDto {
     private String matchId; // matchCode
-    private String timestamp; // optional ISO
+    private String timestamp;
 }

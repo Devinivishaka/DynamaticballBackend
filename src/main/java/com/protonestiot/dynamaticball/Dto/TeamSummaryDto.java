@@ -9,9 +9,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TeamSummaryDto {
-    private String name;                  // team.name
-    private String color;                 // team.color
-    private int score;                    // from Match.scoreTeamA or scoreTeamB
+    private String name;
+    private String color;
+    private int score;
     private List<PlayerSummaryDto> players;
 }
 

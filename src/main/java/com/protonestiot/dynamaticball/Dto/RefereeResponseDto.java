@@ -15,5 +15,5 @@ public class RefereeResponseDto {
     private String lastName;
     private String username;   // email
     private String password;   // raw password (visible to Super Admin)
-    private String action;     // e.g., "EDIT/REMOVE" for frontend buttons
+    private String action;     //  "EDIT/REMOVE" for frontend buttons
 }

@@ -12,12 +12,12 @@ import lombok.*;
 @Table(name = "players")
 public class Player {
 
-    // internal PK
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // business player id from device/UI (e.g., "001")
+
     @Column(nullable = false)
     private String playerCode;
 

@@ -16,19 +16,19 @@ import java.util.function.Function;
 @Component
 public class JwtHelper {
 
-    // Token validity (5 hours)
+
     public static final long JWT_TOKEN_VALIDITY = 5 * 60 * 60 * 1000; // milliseconds
 
     private final Key key = Keys.hmacShaKeyFor(
             "afafasfafafasfasfasfafacasdasfasxASFACASDFACASDFASFASFDAFASFASDAADSCSDFADCVSGCFVADXCcadwavfsfarvf".getBytes()
     );
 
-    // Retrieve username from JWT
+
     public String getUsernameFromToken(String token) {
         return getClaimFromToken(token, Claims::getSubject);
     }
 
-    // Retrieve expiration date from JWT
+
     public Date getExpirationDateFromToken(String token) {
         return getClaimFromToken(token, Claims::getExpiration);
     }
@@ -38,7 +38,7 @@ public class JwtHelper {
         return claimsResolver.apply(claims);
     }
 
-    // Get all claims
+
     private Claims getAllClaimsFromToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -47,13 +47,13 @@ public class JwtHelper {
                 .getBody();
     }
 
-    // Check if expired
+
     private Boolean isTokenExpired(String token) {
         final Date expiration = getExpirationDateFromToken(token);
         return expiration.before(new Date());
     }
 
-    // Generate token
+
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         return doGenerateToken(claims, userDetails.getUsername());
@@ -71,7 +71,7 @@ public class JwtHelper {
                 .compact();
     }
 
-    // Validate token
+
     public Boolean validateToken(String token, UserDetails userDetails) {
         final String username = getUsernameFromToken(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));

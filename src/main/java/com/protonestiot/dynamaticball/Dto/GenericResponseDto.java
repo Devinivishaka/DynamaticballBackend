@@ -10,5 +10,5 @@ import lombok.*;
 public class GenericResponseDto {
     private boolean success;
     private String message;
-    private String id; // optional (matchId, setupId etc.)
+    private String id;
 }

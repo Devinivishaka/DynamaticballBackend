@@ -7,6 +7,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StartMatchRequestDto {
-    private String gameSetupId; // setupCode like GS_xxx
-    private String startTime; // optional ISO string
+    private String gameSetupId;
+    private String startTime;
 }

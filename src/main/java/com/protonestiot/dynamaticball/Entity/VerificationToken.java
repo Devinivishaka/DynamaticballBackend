@@ -9,7 +9,7 @@ import java.util.Date;
 @Entity
 public class VerificationToken {
 
-    // Getters and Setters
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -17,7 +17,7 @@ public class VerificationToken {
     @OneToOne
     private User user;
 
-    private String otpHash;  // store hashed OTP
+    private String otpHash;
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date expiryDate;
