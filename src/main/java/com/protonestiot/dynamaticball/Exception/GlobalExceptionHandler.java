@@ -64,4 +64,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleAll(Exception ex, HttpServletRequest request) {
         return buildError("Internal Server Error", ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
+
+    @ExceptionHandler(GameSetupException.class)
+    public ResponseEntity<ErrorResponseDto> handleGameSetupException(GameSetupException ex, HttpServletRequest request) {
+        return buildError("Game Setup Error", ex.getMessage(), HttpStatus.BAD_REQUEST, request);
+    }
 }
