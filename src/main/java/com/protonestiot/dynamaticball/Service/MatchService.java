@@ -12,6 +12,8 @@ public interface MatchService {
     GenericMatchSummaryResponse getMatchSummary(String matchCode);
     GenericMatchTimelineResponse getMatchTimeline(String matchCode);
     GenericPlayerStatsResponse getPlayerStatistics(String matchCode);
+    GenericResponseDto resumeMatch(MatchActionRequestDto dto);
+    GenericResponseDto stopMatch(MatchActionRequestDto dto);
 
 
 }

@@ -92,75 +92,92 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
+    public GenericResponseDto resumeMatch(MatchActionRequestDto dto) {
+        return changeMatchStatus(dto, "resume");
+    }
+
+    @Override
+    @Transactional
+    public GenericResponseDto stopMatch(MatchActionRequestDto dto) {
+        return changeMatchStatus(dto, "stop");
+    }
+
+    @Override
+    @Transactional
     public GenericResponseDto changeMatchStatus(MatchActionRequestDto dto, String action) {
         Match match = matchRepository.findByMatchCode(dto.getMatchId())
                 .orElseThrow(() -> new RuntimeException("Match not found: " + dto.getMatchId()));
-        LocalDateTime ts = parseOrNow(dto.getTimestamp());
 
-        MatchEvent ev = null;
+        LocalDateTime ts = parseOrNow(dto.getTimestamp());
+        String currentStatus = match.getStatus();
 
         switch (action.toLowerCase()) {
             case "pause":
+                if (!"ACTIVE".equals(currentStatus)) {
+                    throw new RuntimeException("Cannot pause match. Current status: " + currentStatus);
+                }
                 match.setStatus("PAUSED");
-                matchRepository.save(match);
-                ev = MatchEvent.builder()
-                        .match(match)
-                        .eventType("pause")
-                        .description("Match paused")
-                        .timestamp(ts)
-                        .build();
-                matchEventRepository.save(ev);
                 break;
+
             case "resume":
+                if (!"PAUSED".equals(currentStatus)) {
+                    throw new RuntimeException("Cannot resume match. Current status: " + currentStatus);
+                }
                 match.setStatus("ACTIVE");
-                matchRepository.save(match);
-                ev = MatchEvent.builder()
-                        .match(match)
-                        .eventType("resume")
-                        .description("Match resumed")
-                        .timestamp(ts)
-                        .build();
-                matchEventRepository.save(ev);
                 break;
+
             case "stop":
+                if ("ENDED".equals(currentStatus)) {
+                    throw new RuntimeException("Match is already ended");
+                }
                 match.setStatus("ENDED");
                 match.setEndTime(ts);
-                match = matchRepository.save(match);
 
                 if (match.getGameId() == null) {
                     long count = matchRepository.countByGameIdIsNotNull() + 1;
                     match.setGameId(String.format("G_%03d", count));
-                    match = matchRepository.save(match);
                 }
-
-                ev = MatchEvent.builder()
-                        .match(match)
-                        .eventType("match_end")
-                        .description("Match ended")
-                        .timestamp(ts)
-                        .build();
-                matchEventRepository.save(ev);
+                match = matchRepository.save(match);
                 break;
+
             default:
                 throw new RuntimeException("Unknown action: " + action);
         }
 
-        if (ev != null) {
-            String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
-                    "\"matchCode\": \"" + match.getMatchCode() + "\", " +
-                    "\"description\": \"" + ev.getDescription() + "\" }";
+        match = matchRepository.save(match);
 
-            matchWebSocketHandler.broadcast(json);
+        // Create event
+        String eventType = switch (action.toLowerCase()) {
+            case "pause" -> "match_paused";
+            case "resume" -> "match_resumed";
+            case "stop" -> "match_end";
+            default -> action;
+        };
 
-        }
+        MatchEvent ev = MatchEvent.builder()
+                .match(match)
+                .eventType(eventType)
+                .description(action.substring(0, 1).toUpperCase() + action.substring(1) + " match")
+                .timestamp(ts)
+                .build();
+        matchEventRepository.save(ev);
 
-        return GenericResponseDto.builder().success(true).message("Action applied: " + action).id(match.getMatchCode()).build();
+        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
+                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
+                "\"description\": \"" + ev.getDescription() + "\" }";
+
+        matchWebSocketHandler.broadcast(json);
+
+        return GenericResponseDto.builder()
+                .success(true)
+                .message(action.substring(0, 1).toUpperCase() + action.substring(1) + " applied successfully")
+                .id(match.getMatchCode())
+                .build();
     }
 
     @Override
     @Transactional
     public GenericResponseDto addScore(ScoreRequestDto dto) {
-
 
         Match match = matchRepository.findByMatchCode(dto.getMatchId())
                 .orElseThrow(() -> new RuntimeException("Match not found: " + dto.getMatchId()));
@@ -225,7 +242,6 @@ public class MatchServiceImpl implements MatchService {
                 .orElseThrow(() -> new RuntimeException("Match not found"));
 
         LocalDateTime ts = parseOrNow(dto.getTimestamp());
-
 
         if ("possession_change".equals(dto.getEventType())) {
             if (dto.getPlayerId() == null || dto.getPlayerId().isEmpty()) {
