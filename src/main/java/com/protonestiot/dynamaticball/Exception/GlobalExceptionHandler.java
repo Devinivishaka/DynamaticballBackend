@@ -4,6 +4,7 @@ import com.protonestiot.dynamaticball.Dto.ErrorResponseDto;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureException;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,10 +17,24 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-
     private ResponseEntity<ErrorResponseDto> buildError(String error, String message, HttpStatus status, HttpServletRequest request) {
         ErrorResponseDto body = new ErrorResponseDto(false, status.value(), error, message, request.getRequestURI());
         return new ResponseEntity<>(body, status);
+    }
+
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponseDto> handleValidationErrors(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        String message = ex.getBindingResult().getFieldErrors()
+                .stream().map(f -> f.getField() + ": " + f.getDefaultMessage())
+                .findFirst().orElse("Validation failed for the request.");
+        return buildError("Validation Error", message, HttpStatus.BAD_REQUEST, request);
+    }
+
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleEntityNotFound(EntityNotFoundException ex, HttpServletRequest request) {
+        return buildError("Not Found", ex.getMessage(), HttpStatus.NOT_FOUND, request);
     }
 
 
@@ -45,25 +60,26 @@ public class GlobalExceptionHandler {
     }
 
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseDto> handleValidationErrors(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        String message = ex.getBindingResult().getFieldErrors()
-                .stream().map(f -> f.getField() + ": " + f.getDefaultMessage())
-                .findFirst().orElse("Validation failed for the request.");
-        return buildError("Validation Error", message, HttpStatus.BAD_REQUEST, request);
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
+        return buildError("Invalid Request", ex.getMessage(), HttpStatus.BAD_REQUEST, request);
     }
 
 
-    @ExceptionHandler({IllegalArgumentException.class, RuntimeException.class})
-    public ResponseEntity<ErrorResponseDto> handleCommonExceptions(Exception ex, HttpServletRequest request) {
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponseDto> handleRuntimeExceptions(RuntimeException ex, HttpServletRequest request) {
         return buildError("Error", ex.getMessage(), HttpStatus.BAD_REQUEST, request);
     }
 
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleAll(Exception ex, HttpServletRequest request) {
-        return buildError("Internal Server Error", ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR, request);
+        return buildError("Internal Server Error",
+                ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred",
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                request);
     }
+
 
     @ExceptionHandler(GameSetupException.class)
     public ResponseEntity<ErrorResponseDto> handleGameSetupException(GameSetupException ex, HttpServletRequest request) {

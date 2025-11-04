@@ -3,6 +3,7 @@ package com.protonestiot.dynamaticball.Controller;
 import com.protonestiot.dynamaticball.Dto.PlayerRequestDto;
 import com.protonestiot.dynamaticball.Entity.Player;
 import com.protonestiot.dynamaticball.Service.PlayerService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,12 +16,12 @@ public class PlayerController {
     private final PlayerService playerService;
 
     @PostMapping
-    public ResponseEntity<Player> addPlayer(@RequestBody PlayerRequestDto dto) {
+    public ResponseEntity<Player> addPlayer(@Valid @RequestBody PlayerRequestDto dto) {
         return ResponseEntity.ok(playerService.addPlayer(dto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Player> updatePlayer(@PathVariable Long id, @RequestBody PlayerRequestDto dto) {
+    public ResponseEntity<Player> updatePlayer(@PathVariable Long id, @Valid @RequestBody PlayerRequestDto dto) {
         return ResponseEntity.ok(playerService.updatePlayerById(id, dto));
     }
 

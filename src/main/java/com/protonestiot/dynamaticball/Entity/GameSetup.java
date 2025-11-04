@@ -23,10 +23,10 @@ public class GameSetup {
     @Column(unique = true, nullable = false)
     private String setupCode;
 
-    private int gameTime; // minutes
+    private int gameTime;
     private int playersPerTeam;
-    private int maxHoldTime; // seconds
-    private int penaltyTime; // seconds
+    private int maxHoldTime;
+    private int penaltyTime;
 
     private String selectedBall;
     private String goal1;
@@ -44,7 +44,7 @@ public class GameSetup {
 
     }
 
-    //  Generate formatted setupCode after id is assigned
+
     @PostPersist
     public void generateSetupCode() {
         if (this.setupCode == null && this.id != null) {
