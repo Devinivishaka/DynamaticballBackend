@@ -35,4 +35,9 @@ public class Team {
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Player> players = new ArrayList<>();
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int totalScore = 0;
+
 }

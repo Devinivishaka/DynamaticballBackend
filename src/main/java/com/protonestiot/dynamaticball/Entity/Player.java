@@ -12,11 +12,9 @@ import lombok.*;
 @Table(name = "players")
 public class Player {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
 
     @Column(nullable = false)
     private String playerCode;
@@ -29,4 +27,8 @@ public class Player {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id")
     private Team team;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int score = 0; // added score
 }
