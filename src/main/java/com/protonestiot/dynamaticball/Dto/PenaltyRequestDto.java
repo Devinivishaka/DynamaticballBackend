@@ -12,5 +12,5 @@ public class PenaltyRequestDto {
     private String eventType;
     private String playerId;
     private String gameTime;
-    private String time;
+    private String timestamp;
 }

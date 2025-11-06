@@ -25,12 +25,16 @@ public class MatchServiceImpl implements MatchService {
     private final TeamRepository teamRepository;
     private final MatchWebSocketHandler matchWebSocketHandler;
 
-    private LocalDateTime parseOrNow(String iso) {
-        if (iso == null) return LocalDateTime.now();
+    private LocalDateTime parseTimestamp(String timestamp) {
         try {
-            return LocalDateTime.parse(iso);
-        } catch (DateTimeParseException ex) {
-            return LocalDateTime.now();
+            return LocalDateTime.parse(timestamp);
+        } catch (Exception e) {
+            try {
+                LocalTime time = LocalTime.parse(timestamp);
+                return LocalDateTime.of(LocalDate.now(), time);
+            } catch (Exception ex) {
+                throw new RuntimeException("Invalid timestamp format. Expected 'HH:mm' or ISO format (e.g., 2025-11-06T10:30:00)");
+            }
         }
     }
 
@@ -44,7 +48,7 @@ public class MatchServiceImpl implements MatchService {
         long count = matchRepository.count() + 1;
         String matchCode = String.format("M_%03d", count);
 
-        LocalDateTime start = parseOrNow(dto.getStartTime());
+        LocalDateTime start = parseTimestamp(dto.getStartTime());
 
         Long teamAId = null;
         Long teamBId = null;
@@ -106,7 +110,8 @@ public class MatchServiceImpl implements MatchService {
         Match match = matchRepository.findByMatchCode(dto.getMatchId())
                 .orElseThrow(() -> new RuntimeException("Match not found: " + dto.getMatchId()));
 
-        LocalDateTime ts = parseOrNow(dto.getTimestamp());
+        LocalDateTime ts = parseTimestamp(dto.getTimestamp());
+
         String currentStatus = match.getStatus();
 
         switch (action.toLowerCase()) {
@@ -179,8 +184,7 @@ public class MatchServiceImpl implements MatchService {
         Match match = matchRepository.findByMatchCode(dto.getMatchId())
                 .orElseThrow(() -> new RuntimeException("Match not found: " + dto.getMatchId()));
 
-        LocalDateTime ts = parseOrNow(dto.getTimestamp());
-
+        LocalDateTime ts = parseTimestamp(dto.getTimestamp());
 
         Player player = match.getGameSetup().getTeams().stream()
                 .flatMap(team -> team.getPlayers().stream())
@@ -238,7 +242,7 @@ public class MatchServiceImpl implements MatchService {
         Match match = matchRepository.findByMatchCode(dto.getMatchId())
                 .orElseThrow(() -> new RuntimeException("Match not found"));
 
-        LocalDateTime ts = parseOrNow(dto.getTimestamp());
+        LocalDateTime ts = parseTimestamp(dto.getTimestamp());
 
         if ("possession_change".equals(dto.getEventType())) {
             if (dto.getPlayerId() == null || dto.getPlayerId().isEmpty()) {
@@ -280,7 +284,7 @@ public class MatchServiceImpl implements MatchService {
             throw new RuntimeException("playerId is required for penalty event");
         }
 
-        LocalDateTime ts = LocalDateTime.now();
+        LocalDateTime ts = parseTimestamp(dto.getTimestamp());
 
         Player player = match.getGameSetup().getTeams().stream()
                 .flatMap(t -> t.getPlayers().stream())
@@ -316,7 +320,9 @@ public class MatchServiceImpl implements MatchService {
     public GenericResponseDto halftime(MatchActionRequestDto dto) {
         Match match = matchRepository.findByMatchCode(dto.getMatchId())
                 .orElseThrow(() -> new RuntimeException("Match not found"));
-        LocalDateTime ts = parseOrNow(dto.getTimestamp());
+
+        LocalDateTime ts = parseTimestamp(dto.getTimestamp());
+
 
         MatchEvent ev = MatchEvent.builder()
                 .match(match)
