@@ -108,15 +108,16 @@ public class UserService {
     }
 
 
-
     private Map<String, Object> convertToUserResponse(User user) {
         Map<String, Object> userMap = new LinkedHashMap<>();
         userMap.put("userId", user.getUserId());
         userMap.put("firstName", user.getFirstName());
         userMap.put("lastName", user.getLastName());
         userMap.put("username", user.getUsername());
+        userMap.put("password", user.getPassword());
         userMap.put("createdAt", user.getCreatedAt());
         userMap.put("lastLogin", user.getLastLogin());
         return userMap;
     }
+
 }

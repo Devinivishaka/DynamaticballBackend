@@ -14,6 +14,8 @@ public interface MatchService {
     GenericPlayerStatsResponse getPlayerStatistics(String matchCode);
     GenericResponseDto resumeMatch(MatchActionRequestDto dto);
     GenericResponseDto stopMatch(MatchActionRequestDto dto);
+    GenericResponseDto addPenaltyEvent(PenaltyRequestDto dto);
+
 
 
 }

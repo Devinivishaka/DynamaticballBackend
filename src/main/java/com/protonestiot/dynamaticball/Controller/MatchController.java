@@ -28,6 +28,12 @@ public class MatchController {
         return ResponseEntity.ok(matchService.changeMatchStatus(dto, "resume"));
     }
 
+    @PostMapping("/penalty")
+    public ResponseEntity<GenericResponseDto> penalty(@RequestBody PenaltyRequestDto dto) {
+        return ResponseEntity.ok(matchService.addPenaltyEvent(dto));
+    }
+
+
     @PostMapping("/stop")
     public ResponseEntity<GenericResponseDto> stop(@RequestBody MatchActionRequestDto dto) {
         return ResponseEntity.ok(matchService.changeMatchStatus(dto, "stop"));

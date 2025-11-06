@@ -6,7 +6,6 @@ import com.protonestiot.dynamaticball.Handler.MatchWebSocketHandler;
 import com.protonestiot.dynamaticball.Repository.*;
 import com.protonestiot.dynamaticball.Service.MatchService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +33,6 @@ public class MatchServiceImpl implements MatchService {
             return LocalDateTime.now();
         }
     }
-
 
 
     @Override
@@ -146,7 +144,6 @@ public class MatchServiceImpl implements MatchService {
 
         match = matchRepository.save(match);
 
-        // Create event
         String eventType = switch (action.toLowerCase()) {
             case "pause" -> "match_paused";
             case "resume" -> "match_resumed";
@@ -272,6 +269,47 @@ public class MatchServiceImpl implements MatchService {
                 .build();
     }
 
+
+    @Override
+    @Transactional
+    public GenericResponseDto addPenaltyEvent(PenaltyRequestDto dto) {
+        Match match = matchRepository.findByMatchCode(dto.getMatchId())
+                .orElseThrow(() -> new RuntimeException("Match not found: " + dto.getMatchId()));
+
+        if (dto.getPlayerId() == null || dto.getPlayerId().isEmpty()) {
+            throw new RuntimeException("playerId is required for penalty event");
+        }
+
+        LocalDateTime ts = LocalDateTime.now();
+
+        Player player = match.getGameSetup().getTeams().stream()
+                .flatMap(t -> t.getPlayers().stream())
+                .filter(p -> p.getPlayerCode().equals(dto.getPlayerId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Player not found: " + dto.getPlayerId()));
+
+        MatchEvent ev = MatchEvent.builder()
+                .match(match)
+                .eventType("penalty")
+                .playerCode(player.getPlayerCode())
+                .description("Penalty for player " + player.getPlayerCode() +
+                        (dto.getGameTime() != null ? " at " + dto.getGameTime() : ""))
+                .timestamp(ts)
+                .build();
+
+        matchEventRepository.save(ev);
+
+        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
+                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
+                "\"description\": \"" + ev.getDescription() + "\" }";
+        matchWebSocketHandler.broadcast(json);
+
+        return GenericResponseDto.builder()
+                .success(true)
+                .message("Penalty recorded successfully")
+                .id(match.getMatchCode())
+                .build();
+    }
 
     @Override
     @Transactional
