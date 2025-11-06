@@ -5,4 +5,5 @@ import com.protonestiot.dynamaticball.Dto.GameSetupResponseDto;
 
 public interface GameSetupService {
     GameSetupResponseDto saveGameSetup(GameSetupRequestDto requestDto);
+    GameSetupResponseDto updateGameSetup(String gameSetupId, GameSetupRequestDto requestDto);
 }

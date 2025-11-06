@@ -7,6 +7,7 @@ import com.protonestiot.dynamaticball.Exception.GameSetupException;
 import com.protonestiot.dynamaticball.Mapper.GameSetupMapper;
 import com.protonestiot.dynamaticball.Repository.GameSetupRepository;
 import com.protonestiot.dynamaticball.Service.GameSetupService;
+import com.protonestiot.dynamaticball.Entity.Team;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,11 +22,9 @@ public class GameSetupServiceImpl implements GameSetupService {
     @Transactional
     public GameSetupResponseDto saveGameSetup(GameSetupRequestDto requestDto) {
 
-        // basic null check
         if (requestDto == null)
             throw new GameSetupException("Game setup request cannot be null.");
 
-        // STEP 1: Game settings
         if (requestDto.getGameSettings() == null)
             throw new GameSetupException("Game settings are required before connecting the ball.");
 
@@ -101,4 +100,55 @@ public class GameSetupServiceImpl implements GameSetupService {
     private boolean isEmpty(String v) {
         return v == null || v.trim().isEmpty();
     }
+
+
+    @Override
+    @Transactional
+    public GameSetupResponseDto updateGameSetup(String gameSetupId, GameSetupRequestDto requestDto) {
+
+        if (requestDto == null)
+            throw new GameSetupException("Game setup update request cannot be null.");
+
+        GameSetup existing = gameSetupRepository.findBySetupCode(gameSetupId)
+                .orElseThrow(() -> new GameSetupException("Game setup not found for ID: " + gameSetupId));
+
+        if (requestDto.getGameSettings() == null)
+            throw new GameSetupException("Game settings are required.");
+        if (requestDto.getGameSettings().getGameTime() <= 0)
+            throw new GameSetupException("Game time must be greater than 0.");
+        if (requestDto.getGameSettings().getPlayersPerTeam() <= 0)
+            throw new GameSetupException("Players per team must be greater than 0.");
+        if (requestDto.getConnectBall() == null || isEmpty(requestDto.getConnectBall().getSelectedBall()))
+            throw new GameSetupException("Ball selection is required.");
+        if (requestDto.getConnectGoals() == null
+                || isEmpty(requestDto.getConnectGoals().getGoal1())
+                || isEmpty(requestDto.getConnectGoals().getGoal2()))
+            throw new GameSetupException("Both goals (goal1 and goal2) must be connected.");
+        if (requestDto.getTeams() == null
+                || requestDto.getTeams().getTeamA() == null
+                || requestDto.getTeams().getTeamB() == null)
+            throw new GameSetupException("Both teams (A and B) must be provided.");
+
+        GameSetupMapper.updateEntity(existing, requestDto);
+
+        gameSetupRepository.save(existing);
+
+        return GameSetupResponseDto.builder()
+                .success(true)
+                .gameSetupId(existing.getSetupCode())
+                .message("Game setup updated successfully")
+                .teamAId(existing.getTeams().stream()
+                        .filter(team -> "teamA".equals(team.getTeamKey()))
+                        .map(Team::getId)
+                        .findFirst()
+                        .orElse(null))
+                .teamBId(existing.getTeams().stream()
+                        .filter(team -> "teamB".equals(team.getTeamKey()))
+                        .map(Team::getId)
+                        .findFirst()
+                        .orElse(null))
+
+                .build();
+    }
+
 }

@@ -71,4 +71,65 @@ public class GameSetupMapper {
         }
         return gs;
     }
+
+    public static void updateEntity(GameSetup existing, GameSetupRequestDto dto) {
+
+        // --- Update top-level fields ---
+        existing.setGameTime(dto.getGameSettings().getGameTime());
+        existing.setPlayersPerTeam(dto.getGameSettings().getPlayersPerTeam());
+        existing.setMaxHoldTime(dto.getGameSettings().getMaxHoldTime());
+        existing.setPenaltyTime(dto.getGameSettings().getPenaltyTime());
+        existing.setSelectedBall(dto.getConnectBall().getSelectedBall());
+        existing.setGoal1(dto.getConnectGoals().getGoal1());
+        existing.setGoal2(dto.getConnectGoals().getGoal2());
+
+        // --- Update Teams ---
+        if (existing.getTeams() != null && existing.getTeams().size() >= 2) {
+            Team teamA = existing.getTeams().get(0);
+            Team teamB = existing.getTeams().get(1);
+
+            // 🦁 Update Team A
+            if (dto.getTeams().getTeamA() != null) {
+                teamA.setName(dto.getTeams().getTeamA().getName());
+                teamA.setColor(dto.getTeams().getTeamA().getColor());
+                teamA.setGoal(dto.getTeams().getTeamA().getGoal());
+
+                teamA.getPlayers().clear();
+                if (dto.getTeams().getTeamA().getPlayers() != null) {
+                    teamA.getPlayers().addAll(dto.getTeams().getTeamA().getPlayers().stream()
+                            .map(pdto -> Player.builder()
+                                    .playerCode(pdto.getPlayerId())
+                                    .belt(pdto.getBelt())
+                                    .rightWristband(pdto.getRightWristband())
+                                    .leftWristband(pdto.getLeftWristband())
+                                    .camera(pdto.getCamera())
+                                    .team(teamA)
+                                    .build())
+                            .collect(Collectors.toList()));
+                }
+            }
+
+            // 🐯 Update Team B
+            if (dto.getTeams().getTeamB() != null) {
+                teamB.setName(dto.getTeams().getTeamB().getName());
+                teamB.setColor(dto.getTeams().getTeamB().getColor());
+                teamB.setGoal(dto.getTeams().getTeamB().getGoal());
+
+                teamB.getPlayers().clear();
+                if (dto.getTeams().getTeamB().getPlayers() != null) {
+                    teamB.getPlayers().addAll(dto.getTeams().getTeamB().getPlayers().stream()
+                            .map(pdto -> Player.builder()
+                                    .playerCode(pdto.getPlayerId())
+                                    .belt(pdto.getBelt())
+                                    .rightWristband(pdto.getRightWristband())
+                                    .leftWristband(pdto.getLeftWristband())
+                                    .camera(pdto.getCamera())
+                                    .team(teamB)
+                                    .build())
+                            .collect(Collectors.toList()));
+                }
+            }
+        }
+    }
+
 }

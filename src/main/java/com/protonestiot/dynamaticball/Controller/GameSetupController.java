@@ -40,5 +40,31 @@ public class GameSetupController {
         }
     }
 
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PutMapping("/{gameSetupId}")
+    public ResponseEntity<?> updateGameSetup(@PathVariable String gameSetupId,
+                                             @RequestBody GameSetupRequestDto requestDto) {
+        try {
+            return ResponseEntity.ok(gameSetupService.updateGameSetup(gameSetupId, requestDto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "status", 400,
+                    "error", "Game Setup Error",
+                    "message", e.getMessage(),
+                    "path", "/api/v1/game-setup/" + gameSetupId
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "status", 500,
+                    "error", "Internal Server Error",
+                    "message", e.getMessage(),
+                    "path", "/api/v1/game-setup/" + gameSetupId
+            ));
+        }
+    }
+
+
 
 }
