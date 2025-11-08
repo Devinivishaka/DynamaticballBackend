@@ -305,8 +305,9 @@ public class MatchServiceImpl implements MatchService {
                 .match(match)
                 .eventType("penalty")
                 .playerCode(player.getPlayerCode())
-                .description("Penalty for player " + player.getPlayerCode() +
-                        (dto.getPenaltyTime() != null ? " at " + dto.getPenaltyTime() : ""))
+                .description("Player " + player.getPlayerCode() +
+                        (dto.getPenaltyTime() != null ? " received a " + dto.getPenaltyTime() + " s penalty" : " received a penalty") +
+                        (dto.getTimestamp() != null ? " during game time " + dto.getTimestamp() : ""))
                 .timestamp(ts)
                 .build();
 
