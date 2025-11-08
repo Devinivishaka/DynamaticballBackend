@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
-import java.time.format.DateTimeParseException;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,10 +30,19 @@ public class MatchServiceImpl implements MatchService {
             return LocalDateTime.parse(timestamp);
         } catch (Exception e) {
             try {
-                LocalTime time = LocalTime.parse(timestamp);
+                DateTimeFormatter formatter;
+                if (timestamp.matches("^\\d{2}:\\d{2}:\\d{2}$")) {
+                    formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+                } else if (timestamp.matches("^\\d{2}:\\d{2}$")) {
+                    formatter = DateTimeFormatter.ofPattern("HH:mm");
+                } else {
+                    throw new RuntimeException("Invalid time format. Expected 'HH:mm' or 'HH:mm:ss'.");
+                }
+
+                LocalTime time = LocalTime.parse(timestamp, formatter);
                 return LocalDateTime.of(LocalDate.now(), time);
             } catch (Exception ex) {
-                throw new RuntimeException("Invalid timestamp format. Expected 'HH:mm' or ISO format (e.g., 2025-11-06T10:30:00)");
+                throw new RuntimeException("Invalid timestamp format. Expected 'HH:mm:ss', 'HH:mm', or ISO format (e.g., 2025-11-06T10:30:00)");
             }
         }
     }
@@ -297,7 +306,7 @@ public class MatchServiceImpl implements MatchService {
                 .eventType("penalty")
                 .playerCode(player.getPlayerCode())
                 .description("Penalty for player " + player.getPlayerCode() +
-                        (dto.getGameTime() != null ? " at " + dto.getGameTime() : ""))
+                        (dto.getPenaltyTime() != null ? " at " + dto.getPenaltyTime() : ""))
                 .timestamp(ts)
                 .build();
 
