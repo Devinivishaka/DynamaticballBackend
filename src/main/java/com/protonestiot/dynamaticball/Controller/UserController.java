@@ -20,17 +20,14 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping
     public ResponseEntity<?> getUsers(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
-            @RequestParam(required = false) String search)
-    {
+            @RequestParam(required = false) String search) {
         return ResponseEntity.ok(userService.getUsers(page, limit, search));
     }
-
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/referees")
@@ -38,33 +35,28 @@ public class UserController {
         return ResponseEntity.ok(userService.addReferee(userDto));
     }
 
-
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/referees")
     public ResponseEntity<List<RefereeResponseDto>> getAllReferees() {
         return ResponseEntity.ok(userService.getAllRefereesDto());
     }
 
-
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getUserById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+    @GetMapping("/{userId}")
+    public ResponseEntity<Map<String, Object>> getUserById(@PathVariable String userId) {
+        return ResponseEntity.ok(userService.getUserByUserId(userId));
     }
 
-
-
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @PutMapping("/referees/{id}")
-    public ResponseEntity<User> updateReferee(@PathVariable Long id, @RequestBody @Valid UserDto userDto) {
-        return ResponseEntity.ok(userService.updateReferee(id, userDto));
+    @PutMapping("/referees/{userId}")
+    public ResponseEntity<User> updateReferee(@PathVariable String userId, @RequestBody @Valid UserDto userDto) {
+        return ResponseEntity.ok(userService.updateRefereeByUserId(userId, userDto));
     }
 
-
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @DeleteMapping("/referees/{id}")
-    public ResponseEntity<String> deleteReferee(@PathVariable Long id) {
-        userService.deleteReferee(id);
+    @DeleteMapping("/referees/{userId}")
+    public ResponseEntity<String> deleteReferee(@PathVariable String userId) {
+        userService.deleteRefereeByUserId(userId);
         return ResponseEntity.ok("Referee deleted successfully");
     }
 }

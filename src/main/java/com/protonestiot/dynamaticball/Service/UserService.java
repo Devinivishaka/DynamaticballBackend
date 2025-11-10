@@ -19,7 +19,6 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-
     public User addReferee(UserDto userDto) {
         User user = new User();
         user.setFirstName(userDto.getFirstName());
@@ -27,10 +26,8 @@ public class UserService {
         user.setUsername(userDto.getUsername());
         user.setPassword(userDto.getPassword());
         user.setRole(Role.REFEREE);
-
         return userRepository.save(user);
     }
-
 
     public List<RefereeResponseDto> getAllRefereesDto() {
         return userRepository.findAll().stream()
@@ -46,30 +43,25 @@ public class UserService {
                 .toList();
     }
 
-
-    public User updateReferee(Long id, UserDto userDto) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Referee not found"));
+    public User updateRefereeByUserId(String userId, UserDto userDto) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Referee not found with ID: " + userId));
 
         if (userDto.getFirstName() != null) user.setFirstName(userDto.getFirstName());
         if (userDto.getLastName() != null) user.setLastName(userDto.getLastName());
         if (userDto.getUsername() != null) user.setUsername(userDto.getUsername());
-        if (userDto.getPassword() != null) user.setPassword(userDto.getPassword()); // plain password
+        if (userDto.getPassword() != null) user.setPassword(userDto.getPassword());
 
         return userRepository.save(user);
     }
 
-
-    public void deleteReferee(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("Referee not found with ID: " + id);
-        }
-        userRepository.deleteById(id);
+    public void deleteRefereeByUserId(String userId) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Referee not found with ID: " + userId));
+        userRepository.delete(user);
     }
 
-
     public Map<String, Object> getUsers(int page, int limit, String search) {
-
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
         Page<User> usersPage;
 
@@ -95,18 +87,14 @@ public class UserService {
 
         data.put("pagination", pagination);
         response.put("data", data);
-
         return response;
     }
 
-
-    public Map<String, Object> getUserById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
+    public Map<String, Object> getUserByUserId(String userId) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
         return convertToUserResponse(user);
     }
-
 
     private Map<String, Object> convertToUserResponse(User user) {
         Map<String, Object> userMap = new LinkedHashMap<>();
@@ -119,5 +107,4 @@ public class UserService {
         userMap.put("lastLogin", user.getLastLogin());
         return userMap;
     }
-
 }

@@ -24,7 +24,6 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    //  Add formatted user ID field
     @Column(unique = true)
     private String userId;
 
@@ -70,7 +69,6 @@ public class User {
     }
 
 
-
     private String generateUserId() {
         return String.format("U_%03d", (int) (System.currentTimeMillis() % 1000));
     }
@@ -78,7 +76,7 @@ public class User {
 
     @PreUpdate
     protected void onUpdate() {
-        lastLogin = LocalDateTime.now(); // update lastLogin every time entity is updated
+        lastLogin = LocalDateTime.now();
     }
 
 }
