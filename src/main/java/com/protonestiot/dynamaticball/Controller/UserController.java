@@ -9,7 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -58,5 +60,30 @@ public class UserController {
     public ResponseEntity<String> deleteReferee(@PathVariable String userId) {
         userService.deleteRefereeByUserId(userId);
         return ResponseEntity.ok("Referee deleted successfully");
+    }
+
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
+    @PostMapping("/{userId}/upload-profile-image")
+    public ResponseEntity<String> uploadProfileImage(
+            @PathVariable String userId,
+            @RequestParam("file") MultipartFile file) {
+        String blobName = userService.uploadProfileImage(userId, file);
+        return ResponseEntity.ok(blobName); // Return blob name to client
+    }
+
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
+    @GetMapping("/profile-image/{blobName}")
+    public ResponseEntity<byte[]> getProfileImage(@PathVariable String blobName) {
+        byte[] imageData = userService.getProfileImage(blobName);
+        return ResponseEntity.ok()
+                .header("Content-Type", "image/jpeg") // or determine dynamically
+                .body(imageData);
+    }
+
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
+    @DeleteMapping("/{userId}/delete-profile-image")
+    public ResponseEntity<String> deleteProfileImage(@PathVariable String userId) {
+        userService.deleteProfileImage(userId);
+        return ResponseEntity.ok("Profile image deleted successfully");
     }
 }

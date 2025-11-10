@@ -1,23 +1,44 @@
 package com.protonestiot.dynamaticball.Service;
 
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.protonestiot.dynamaticball.Dto.RefereeResponseDto;
 import com.protonestiot.dynamaticball.Dto.UserDto;
 import com.protonestiot.dynamaticball.Entity.Role;
 import com.protonestiot.dynamaticball.Entity.User;
 import com.protonestiot.dynamaticball.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.*;
+import java.io.File;
+
 
 @Service
 public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Value("${azure.storage.account-name}")
+    private String accountName;
+
+    @Value("${azure.storage.account-key}")
+    private String accountKey;
+
+    @Value("${azure.storage.container-name}")
+    private String containerName;
+
+    @Value("${azure.storage.endpoint}")
+    private String endpoint;
+
 
     public User addReferee(UserDto userDto) {
         User user = new User();
@@ -105,6 +126,92 @@ public class UserService {
         userMap.put("password", user.getPassword());
         userMap.put("createdAt", user.getCreatedAt());
         userMap.put("lastLogin", user.getLastLogin());
+        userMap.put("profileImageUrl", user.getProfileImageUrl());
         return userMap;
+    }
+
+    public String uploadProfileImage(String userId, MultipartFile file) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+
+        try {
+            String connectionString = String.format(
+                    "DefaultEndpointsProtocol=https;AccountName=%s;AccountKey=%s;EndpointSuffix=core.windows.net",
+                    accountName, accountKey);
+
+            BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
+                    .connectionString(connectionString)
+                    .buildClient();
+
+            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+
+            if (!containerClient.exists()) {
+                containerClient.create();
+            }
+
+            String blobName = userId + "_" + UUID.randomUUID() + "_" + file.getOriginalFilename();
+            BlobClient blobClient = containerClient.getBlobClient(blobName);
+
+            blobClient.upload(file.getInputStream(), file.getSize(), true);
+
+            user.setProfileImageUrl(blobName); // save blob name only
+            userRepository.save(user);
+
+            return blobName;
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload profile image: " + e.getMessage(), e);
+        }
+    }
+
+    public byte[] getProfileImage(String blobName) {
+        String connectionString = String.format(
+                "DefaultEndpointsProtocol=https;AccountName=%s;AccountKey=%s;EndpointSuffix=core.windows.net",
+                accountName, accountKey);
+
+        BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
+                .connectionString(connectionString)
+                .buildClient();
+
+        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+        BlobClient blobClient = containerClient.getBlobClient(blobName);
+
+        if (!blobClient.exists()) {
+            throw new IllegalArgumentException("Image not found: " + blobName);
+        }
+
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            blobClient.download(outputStream);
+            return outputStream.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get profile image: " + e.getMessage(), e);
+        }
+    }
+
+
+    public void deleteProfileImage(String userId) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+
+        String blobName = user.getProfileImageUrl();
+        if (blobName == null || blobName.isEmpty()) {
+            throw new IllegalArgumentException("No profile image found for this user");
+        }
+
+        String connectionString = String.format(
+                "DefaultEndpointsProtocol=https;AccountName=%s;AccountKey=%s;EndpointSuffix=core.windows.net",
+                accountName, accountKey);
+
+        BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
+                .connectionString(connectionString)
+                .buildClient();
+
+        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+        BlobClient blobClient = containerClient.getBlobClient(blobName);
+
+        if (blobClient.exists()) blobClient.delete();
+
+        user.setProfileImageUrl(null);
+        userRepository.save(user);
     }
 }

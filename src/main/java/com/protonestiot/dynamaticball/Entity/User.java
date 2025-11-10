@@ -39,6 +39,8 @@ public class User {
     private LocalDateTime createdAt;
     private LocalDateTime lastLogin;
 
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
 
     public void setUsername(String username) {
         if (username != null) {
