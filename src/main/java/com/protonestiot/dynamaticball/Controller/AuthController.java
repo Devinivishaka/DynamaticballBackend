@@ -50,7 +50,7 @@ public class AuthController {
         return String.valueOf(number);
     }
 
-    // ---------------- LOGIN ----------------
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
 

@@ -16,7 +16,7 @@ public class GameSetupController {
     @Autowired
     private GameSetupService gameSetupService;
 
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @PostMapping
     public ResponseEntity<?> saveGameSetup(@RequestBody GameSetupRequestDto requestDto) {
         try {
@@ -40,7 +40,7 @@ public class GameSetupController {
         }
     }
 
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @PutMapping("/{gameSetupId}")
     public ResponseEntity<?> updateGameSetup(@PathVariable String gameSetupId,
                                              @RequestBody GameSetupRequestDto requestDto) {

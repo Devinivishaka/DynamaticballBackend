@@ -4,6 +4,7 @@ import com.protonestiot.dynamaticball.Dto.GameHistoryResponseDto;
 import com.protonestiot.dynamaticball.Service.GameHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -13,6 +14,7 @@ public class GameHistoryController {
 
     private final GameHistoryService gameHistoryService;
 
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @GetMapping("/history")
     public ResponseEntity<GameHistoryResponseDto> getGameHistory(
             @RequestParam(defaultValue = "1") int page,
