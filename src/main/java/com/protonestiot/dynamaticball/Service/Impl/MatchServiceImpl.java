@@ -599,11 +599,19 @@ public class MatchServiceImpl implements MatchService {
     @Override
     @Transactional(readOnly = true)
     public StreamsResponseDto getStreams(String gameId) {
-        gameSetupRepository.findBySetupCode(gameId)
-                .orElseThrow(() -> new RuntimeException("Game setup not found for gameSetupId: " + gameId));
+        GameSetup gameSetup;
+        if (!gameId.startsWith("M")) {
+            Match match = matchRepository.findByGameId(gameId)
+                    .orElseThrow(() -> new RuntimeException("Match not found for id: " + gameId));
+
+            gameSetup = match.getGameSetup();
+        } else {
+            gameSetup = gameSetupRepository.findBySetupCode(gameId)
+                    .orElseThrow(() -> new RuntimeException("Game setup not found for gameSetupId: " + gameId));
+        }
 
         try {
-            MediaServiceClient.StreamsResponse streamsResponse = mediaServiceClient.getStreams(gameId);
+            MediaServiceClient.StreamsResponse streamsResponse = mediaServiceClient.getStreams(gameSetup.getSetupCode());
 
             List<StreamsResponseDto.StreamItemDto> streamItems = streamsResponse.getStreams() != null
                     ? streamsResponse.getStreams().stream()
