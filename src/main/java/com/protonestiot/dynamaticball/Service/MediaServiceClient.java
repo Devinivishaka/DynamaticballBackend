@@ -25,8 +25,8 @@ public class MediaServiceClient {
     private final String apiKey;
 
     public MediaServiceClient(
-            @Value("${mediamtx.server.url:http://localhost:8000}") String baseUrl,
-            @Value("${mediamtx.server.api-key:}") String apiKey
+            @Value("${streaming.server.url:http://localhost:8000}") String baseUrl,
+            @Value("${streaming.server.api-key:}") String apiKey
     ) {
         this.apiKey = (apiKey == null || apiKey.isBlank()) ? null : apiKey;
         this.webClient = WebClient.builder()

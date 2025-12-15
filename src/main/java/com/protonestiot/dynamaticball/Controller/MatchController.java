@@ -81,5 +81,9 @@ public class MatchController {
         return matchService.getPlayerStatistics(matchId);
     }
 
-
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
+    @PostMapping("/recording/start")
+    public ResponseEntity<GenericResponseDto> startRecording(@RequestBody StartRecordingRequestDto dto) {
+        return ResponseEntity.ok(matchService.startRecording(dto));
+    }
 }

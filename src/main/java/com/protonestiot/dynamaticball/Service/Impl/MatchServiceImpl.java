@@ -5,12 +5,14 @@ import com.protonestiot.dynamaticball.Entity.*;
 import com.protonestiot.dynamaticball.Handler.MatchWebSocketHandler;
 import com.protonestiot.dynamaticball.Repository.*;
 import com.protonestiot.dynamaticball.Service.MatchService;
+import com.protonestiot.dynamaticball.Service.MediaServiceClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +26,7 @@ public class MatchServiceImpl implements MatchService {
     private final MatchEventRepository matchEventRepository;
     private final TeamRepository teamRepository;
     private final MatchWebSocketHandler matchWebSocketHandler;
+    private final MediaServiceClient mediaServiceClient;
 
     private LocalDateTime parseTimestamp(String timestamp) {
         try {
@@ -548,5 +551,48 @@ public class MatchServiceImpl implements MatchService {
                 .build();
     }
 
+    @Override
+    @Transactional
+    public GenericResponseDto startRecording(StartRecordingRequestDto dto) {
+        GameSetup gameSetup = gameSetupRepository.findBySetupCode(dto.getGameSetupId())
+                .orElseThrow(() -> new RuntimeException("Game setup not found for gameSetupId: " + dto.getGameSetupId()));
 
+        List<Team> teams = gameSetup.getTeams();
+        if (teams == null || teams.isEmpty()) {
+            throw new RuntimeException("No teams found for gameSetup: " + gameSetup.getSetupCode());
+        }
+
+        List<MediaServiceClient.CameraAssignmentReq> cameras = new ArrayList<>();
+
+        for (Team team : teams) {
+            List<Player> players = team.getPlayers();
+            if (players != null && !players.isEmpty()) {
+                for (Player player : players) {
+                    if (player.getCamera() != null && !player.getCamera().isEmpty()) {
+                        MediaServiceClient.CameraAssignmentReq cameraReq = new MediaServiceClient.CameraAssignmentReq();
+                        cameraReq.setCameraId(player.getCamera());
+                        cameraReq.setPlayerId(player.getPlayerCode());
+                        cameraReq.setTeam(team.getTeamKey());
+                        cameras.add(cameraReq);
+                    }
+                }
+            }
+        }
+
+        MediaServiceClient.StartRequest startRequest = new MediaServiceClient.StartRequest();
+        startRequest.setMatchId(dto.getGameSetupId());
+        startRequest.setCameras(cameras);
+
+        try {
+            MediaServiceClient.StartResponse response = mediaServiceClient.startMatch(startRequest);
+
+            return GenericResponseDto.builder()
+                    .success(true)
+                    .message("Recording started successfully. Status: " + response.getStatus())
+                    .id(dto.getGameSetupId())
+                    .build();
+        } catch (MediaServiceClient.MediaServiceException e) {
+            throw new RuntimeException("Failed to start recording: " + e.getMessage(), e);
+        }
+    }
 }
