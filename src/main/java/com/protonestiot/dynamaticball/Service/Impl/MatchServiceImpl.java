@@ -595,4 +595,37 @@ public class MatchServiceImpl implements MatchService {
             throw new RuntimeException("Failed to start recording: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StreamsResponseDto getStreams(String gameId) {
+        gameSetupRepository.findBySetupCode(gameId)
+                .orElseThrow(() -> new RuntimeException("Game setup not found for gameSetupId: " + gameId));
+
+        try {
+            MediaServiceClient.StreamsResponse streamsResponse = mediaServiceClient.getStreams(gameId);
+
+            List<StreamsResponseDto.StreamItemDto> streamItems = streamsResponse.getStreams() != null
+                    ? streamsResponse.getStreams().stream()
+                    .map(item -> StreamsResponseDto.StreamItemDto.builder()
+                            .cameraId(item.getCameraId())
+                            .playerId(item.getPlayerId())
+                            .team(item.getTeam())
+                            .manifest(item.getManifest())
+                            .token(item.getToken())
+                            .build())
+                    .collect(Collectors.toList())
+                    : new ArrayList<>();
+
+            return StreamsResponseDto.builder()
+                    .success(true)
+                    .message("Streams retrieved successfully")
+                    .matchId(streamsResponse.getMatchId())
+                    .streams(streamItems)
+                    .build();
+        } catch (MediaServiceClient.MediaServiceException e) {
+            throw new RuntimeException("Failed to get streams: " + e.getMessage(), e);
+        }
+    }
 }
+

@@ -86,4 +86,11 @@ public class MatchController {
     public ResponseEntity<GenericResponseDto> startRecording(@RequestBody StartRecordingRequestDto dto) {
         return ResponseEntity.ok(matchService.startRecording(dto));
     }
+
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
+    @GetMapping("/recording/{gameId}/streams")
+    public ResponseEntity<StreamsResponseDto> getStreams(@PathVariable String gameId) {
+        return ResponseEntity.ok(matchService.getStreams(gameId));
+    }
 }
+

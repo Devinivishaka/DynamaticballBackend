@@ -16,4 +16,5 @@ public interface MatchService {
     GenericResponseDto stopMatch(MatchActionRequestDto dto);
     GenericResponseDto addPenaltyEvent(PenaltyRequestDto dto);
     GenericResponseDto startRecording(StartRecordingRequestDto dto);
+    StreamsResponseDto getStreams(String gameId);
 }
