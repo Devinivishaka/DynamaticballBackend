@@ -597,11 +597,38 @@ public class MatchServiceImpl implements MatchService {
     }
 
     @Override
+    @Transactional
+    public void stopRecording(MatchActionRequestDto dto) {
+
+        Match match = matchRepository.findByMatchCode(dto.getMatchId())
+                .orElseThrow(() -> new RuntimeException("Match not found for matchCode: " + dto.getMatchId()));
+
+        GameSetup gameSetup = match.getGameSetup();
+        String gameId = gameSetup.getSetupCode();
+
+        try {
+            MediaServiceClient.StopRequest stopRequest = new MediaServiceClient.StopRequest();
+            stopRequest.setMatchId(gameId);
+
+            MediaServiceClient.StopResponse response = mediaServiceClient.stopMatch(stopRequest);
+
+            GenericResponseDto.builder()
+                    .success(true)
+                    .message("Recording stopped successfully. Status: " + response.getStatus())
+                    .id(gameId)
+                    .build();
+        } catch (MediaServiceClient.MediaServiceException e) {
+            throw new RuntimeException("Failed to stop recording: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public StreamsResponseDto getStreams(String gameId) {
+
         GameSetup gameSetup;
-        if (!gameId.startsWith("M")) {
-            Match match = matchRepository.findByGameId(gameId)
+        if (gameId.startsWith("M")) {
+            Match match = matchRepository.findByMatchCode(gameId)
                     .orElseThrow(() -> new RuntimeException("Match not found for id: " + gameId));
 
             gameSetup = match.getGameSetup();

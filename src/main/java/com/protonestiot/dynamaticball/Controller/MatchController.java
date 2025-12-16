@@ -42,6 +42,7 @@ public class MatchController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @PostMapping("/stop")
     public ResponseEntity<GenericResponseDto> stop(@RequestBody MatchActionRequestDto dto) {
+        matchService.stopRecording(dto);
         return ResponseEntity.ok(matchService.changeMatchStatus(dto, "stop"));
     }
 
@@ -92,5 +93,10 @@ public class MatchController {
     public ResponseEntity<StreamsResponseDto> getStreams(@PathVariable String gameId) {
         return ResponseEntity.ok(matchService.getStreams(gameId));
     }
-}
 
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
+    @GetMapping("/{matchId}/videos")
+    public ResponseEntity<VideosResponseDto> getVideos(@PathVariable String matchId) {
+        return ResponseEntity.ok(matchService.getVideos(matchId));
+    }
+}
