@@ -50,6 +50,35 @@ public class MatchServiceImpl implements MatchService {
         }
     }
 
+    private MatchWsEventDto buildMatchWsEvent(Match match, String eventType, LocalDateTime ts, Team team, Player player) {
+        MatchWsEventDto.MatchData matchData = MatchWsEventDto.MatchData.builder()
+                .status(match.getStatus())
+                .scoreTeamA(match.getScoreTeamA())
+                .scoreTeamB(match.getScoreTeamB())
+                .build();
+
+        MatchWsEventDto.TeamData teamData = team != null ? MatchWsEventDto.TeamData.builder()
+                .teamId(team.getId())
+                .teamKey(team.getTeamKey())
+                .score(team.getTotalScore())
+                .build() : null;
+
+        MatchWsEventDto.PlayerData playerData = player != null ? MatchWsEventDto.PlayerData.builder()
+                .playerId(player.getPlayerCode())
+                .playerScore(player.getScore())
+                .penaltySeconds(player.getPenaltyTime() != null ? Integer.parseInt(player.getPenaltyTime()) : null)
+                .build() : null;
+
+        return MatchWsEventDto.builder()
+                .event(eventType)
+                .matchCode(match.getMatchCode())
+                .timestamp(ts.toString())
+                .match(matchData)
+                .team(teamData)
+                .player(playerData)
+                .build();
+    }
+
 
     @Override
     @Transactional
@@ -90,11 +119,8 @@ public class MatchServiceImpl implements MatchService {
                 .build();
         matchEventRepository.save(ev);
 
-        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
-                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
-                "\"description\": \"" + ev.getDescription() + "\" }";
-
-        matchWebSocketHandler.broadcast(json);
+        MatchWsEventDto ws = buildMatchWsEvent(match, "match_start", start, null, null);
+        matchWebSocketHandler.broadcast(ws);
 
 
         return GenericResponseDto.builder()
@@ -124,63 +150,42 @@ public class MatchServiceImpl implements MatchService {
 
         LocalDateTime ts = parseTimestamp(dto.getTimestamp());
 
-        String currentStatus = match.getStatus();
-
         switch (action.toLowerCase()) {
-            case "pause":
-                if (!"ACTIVE".equals(currentStatus)) {
-                    throw new RuntimeException("Cannot pause match. Current status: " + currentStatus);
-                }
+            case "pause" -> {
+                if (!"ACTIVE".equals(match.getStatus()))
+                    throw new RuntimeException("Cannot pause match. Current status: " + match.getStatus());
                 match.setStatus("PAUSED");
-                break;
-
-            case "resume":
-                if (!"PAUSED".equals(currentStatus)) {
-                    throw new RuntimeException("Cannot resume match. Current status: " + currentStatus);
-                }
+            }
+            case "resume" -> {
+                if (!"PAUSED".equals(match.getStatus()))
+                    throw new RuntimeException("Cannot resume match. Current status: " + match.getStatus());
                 match.setStatus("ACTIVE");
-                break;
-
-            case "stop":
-                if ("ENDED".equals(currentStatus)) {
-                    throw new RuntimeException("Match is already ended");
-                }
+            }
+            case "stop" -> {
+                if ("ENDED".equals(match.getStatus()))
+                    throw new RuntimeException("Match already ended");
                 match.setStatus("ENDED");
                 match.setEndTime(ts);
-
                 if (match.getGameId() == null) {
                     long count = matchRepository.countByGameIdIsNotNull() + 1;
                     match.setGameId(String.format("G_%03d", count));
                 }
-                match = matchRepository.save(match);
-                break;
-
-            default:
-                throw new RuntimeException("Unknown action: " + action);
+            }
+            default -> throw new RuntimeException("Unknown action: " + action);
         }
 
-        match = matchRepository.save(match);
-
-        String eventType = switch (action.toLowerCase()) {
-            case "pause" -> "match_paused";
-            case "resume" -> "match_resumed";
-            case "stop" -> "match_end";
-            default -> action;
-        };
+        matchRepository.save(match);
 
         MatchEvent ev = MatchEvent.builder()
                 .match(match)
-                .eventType(eventType)
-                .description(action.substring(0, 1).toUpperCase() + action.substring(1) + " match")
+                .eventType(action.toLowerCase())
+                .description(action.substring(0, 1).toUpperCase() + action.substring(1))
                 .timestamp(ts)
                 .build();
         matchEventRepository.save(ev);
 
-        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
-                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
-                "\"description\": \"" + ev.getDescription() + "\" }";
-
-        matchWebSocketHandler.broadcast(json);
+        MatchWsEventDto ws = buildMatchWsEvent(match, action.toLowerCase(), ts, null, null);
+        matchWebSocketHandler.broadcast(ws);
 
         return GenericResponseDto.builder()
                 .success(true)
@@ -192,7 +197,6 @@ public class MatchServiceImpl implements MatchService {
     @Override
     @Transactional
     public GenericResponseDto addScore(ScoreRequestDto dto) {
-
         Match match = matchRepository.findByMatchCode(dto.getMatchId())
                 .orElseThrow(() -> new RuntimeException("Match not found: " + dto.getMatchId()));
 
@@ -204,21 +208,14 @@ public class MatchServiceImpl implements MatchService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Player not found: " + dto.getPlayerId()));
 
-
-        int newPlayerScore = player.getScore() + dto.getScore();
-        player.setScore(newPlayerScore);
-
-
+        player.setScore(player.getScore() + dto.getScore());
         Team team = player.getTeam();
-        int teamScore = team.getPlayers().stream().mapToInt(Player::getScore).sum();
-        team.setTotalScore(teamScore);
+        team.setTotalScore(team.getPlayers().stream().mapToInt(Player::getScore).sum());
 
         if (match.getTeamAId().equals(team.getId())) {
-            match.setScoreTeamA(teamScore);
+            match.setScoreTeamA(team.getTotalScore());
         } else if (match.getTeamBId().equals(team.getId())) {
-            match.setScoreTeamB(teamScore);
-        } else {
-            throw new RuntimeException("Player's team does not match any match teams");
+            match.setScoreTeamB(team.getTotalScore());
         }
 
         matchRepository.save(match);
@@ -234,15 +231,12 @@ public class MatchServiceImpl implements MatchService {
                 .build();
         matchEventRepository.save(ev);
 
-        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
-                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
-                "\"description\": \"" + ev.getDescription() + "\" }";
-
-        matchWebSocketHandler.broadcast(json);
+        MatchWsEventDto ws = buildMatchWsEvent(match, "goal", ts, team, player);
+        matchWebSocketHandler.broadcast(ws);
 
         return GenericResponseDto.builder()
                 .success(true)
-                .message("Score updated for player " + player.getPlayerCode() + " in team " + team.getId())
+                .message("Score updated for player " + player.getPlayerCode())
                 .id(match.getMatchCode())
                 .build();
     }
@@ -256,27 +250,28 @@ public class MatchServiceImpl implements MatchService {
 
         LocalDateTime ts = parseTimestamp(dto.getTimestamp());
 
-        if ("possession_change".equals(dto.getEventType())) {
-            if (dto.getPlayerId() == null || dto.getPlayerId().isEmpty()) {
-                throw new RuntimeException("playerId is required for possession_change event");
-            }
+        Player player = null;
+        Team team = null;
+        if (dto.getPlayerId() != null) {
+            player = match.getGameSetup().getTeams().stream()
+                    .flatMap(t -> t.getPlayers().stream())
+                    .filter(p -> p.getPlayerCode().equals(dto.getPlayerId()))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Player not found: " + dto.getPlayerId()));
+            team = player.getTeam();
         }
 
         MatchEvent ev = MatchEvent.builder()
                 .match(match)
                 .eventType(dto.getEventType())
                 .playerCode(dto.getPlayerId())
-                .description(dto.getEventType() + (dto.getPlayerId() != null && !dto.getPlayerId().isEmpty() ? " by " + dto.getPlayerId() : ""))
+                .description(dto.getEventType() + (dto.getPlayerId() != null ? " by " + dto.getPlayerId() : ""))
                 .timestamp(ts)
                 .build();
-
         matchEventRepository.save(ev);
 
-        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
-                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
-                "\"description\": \"" + ev.getDescription() + "\" }";
-
-        matchWebSocketHandler.broadcast(json);
+        MatchWsEventDto ws = buildMatchWsEvent(match, dto.getEventType(), ts, team, player);
+        matchWebSocketHandler.broadcast(ws);
 
         return GenericResponseDto.builder()
                 .success(true)
@@ -284,8 +279,6 @@ public class MatchServiceImpl implements MatchService {
                 .id(match.getMatchCode())
                 .build();
     }
-
-
     @Override
     @Transactional
     public GenericResponseDto addPenaltyEvent(PenaltyRequestDto dto) {
@@ -316,10 +309,23 @@ public class MatchServiceImpl implements MatchService {
 
         matchEventRepository.save(ev);
 
-        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
-                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
-                "\"description\": \"" + ev.getDescription() + "\" }";
-        matchWebSocketHandler.broadcast(json);
+        MatchWsEventDto ws = MatchWsEventDto.builder()
+                .event("penalty")
+                .matchCode(match.getMatchCode())
+                .timestamp(ts.toString())
+                .player(MatchWsEventDto.PlayerData.builder()
+                        .playerId(player.getPlayerCode())
+                        .penaltySeconds(
+                                dto.getPenaltyTime() != null
+                                        ? Integer.parseInt(dto.getPenaltyTime())
+                                        : null
+                        )
+
+                        .build())
+                .build();
+
+        matchWebSocketHandler.broadcast(ws);
+
 
         return GenericResponseDto.builder()
                 .success(true)
@@ -336,7 +342,6 @@ public class MatchServiceImpl implements MatchService {
 
         LocalDateTime ts = parseTimestamp(dto.getTimestamp());
 
-
         MatchEvent ev = MatchEvent.builder()
                 .match(match)
                 .eventType("halftime")
@@ -345,15 +350,16 @@ public class MatchServiceImpl implements MatchService {
                 .build();
         matchEventRepository.save(ev);
 
-        String json = "{ \"event\": \"" + ev.getEventType() + "\", " +
-                "\"matchCode\": \"" + match.getMatchCode() + "\", " +
-                "\"description\": \"" + ev.getDescription() + "\" }";
+        MatchWsEventDto ws = buildMatchWsEvent(match, "halftime", ts, null, null);
+        matchWebSocketHandler.broadcast(ws);
 
-        matchWebSocketHandler.broadcast(json);
-
-
-        return GenericResponseDto.builder().success(true).message("Halftime recorded").id(match.getMatchCode()).build();
+        return GenericResponseDto.builder()
+                .success(true)
+                .message("Halftime recorded")
+                .id(match.getMatchCode())
+                .build();
     }
+
 
 
     public MatchStatusDto getMatchStatus(String matchCode) {

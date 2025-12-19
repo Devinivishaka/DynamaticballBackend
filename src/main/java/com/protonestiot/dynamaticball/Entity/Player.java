@@ -31,4 +31,10 @@ public class Player {
     @Column(nullable = false)
     @Builder.Default
     private int score = 0; // added score
+
+    @Column(name = "penalty_time")
+    private String penaltyTime; // format: "0:00" or seconds as string
+
+
+
 }
