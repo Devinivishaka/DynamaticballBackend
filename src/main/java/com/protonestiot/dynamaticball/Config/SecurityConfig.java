@@ -45,6 +45,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/ws-match/**").permitAll()
                         .requestMatchers("/topic/match/").permitAll()
+                        // Swagger/OpenAPI endpoints (springdoc)
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()   // LOGIN, RESET-PASSWORD public
                         .requestMatchers("/api/v1/users/**").hasRole("SUPER_ADMIN")  // only SUPER_ADMIN
                         .anyRequest().authenticated() // everything else requires authentication

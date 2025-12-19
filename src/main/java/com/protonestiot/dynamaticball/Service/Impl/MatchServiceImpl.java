@@ -662,5 +662,71 @@ public class MatchServiceImpl implements MatchService {
             throw new RuntimeException("Failed to get streams: " + e.getMessage(), e);
         }
     }
-}
 
+    @Override
+    @Transactional(readOnly = true)
+    public VideosResponseDto getVideos(String matchId) {
+        // Find match either by matchCode (M_XXX) or by gameId (G_XXX)
+        Match match;
+        if (matchId != null && matchId.startsWith("M_")) {
+            match = matchRepository.findByMatchCode(matchId)
+                    .orElseThrow(() -> new RuntimeException("Match not found: " + matchId));
+        } else if (matchId != null && matchId.startsWith("G_")) {
+            match = matchRepository.findByGameId(matchId)
+                    .orElseThrow(() -> new RuntimeException("Match not found by gameId: " + matchId));
+        } else {
+            // default: try matchCode first
+            match = matchRepository.findByMatchCode(matchId)
+                    .orElseThrow(() -> new RuntimeException("Match not found: " + matchId));
+        }
+
+        // derive start/end times
+        LocalDateTime start = match.getStartTime();
+        LocalDateTime end = match.getEndTime();
+        if (start == null) {
+            throw new RuntimeException("Match start time not set for: " + matchId);
+        }
+        // If end is null (still running), use now
+        LocalDateTime effectiveEnd = (end != null) ? end : LocalDateTime.now();
+
+        // duration in mm:ss
+        Duration dur = Duration.between(start, effectiveEnd);
+        long minutes = dur.toMinutes();
+        long seconds = dur.minusMinutes(minutes).getSeconds();
+        String durationStr = String.format("%d:%02d", minutes, seconds);
+
+        // Build video items for each player
+        List<VideosResponseDto.VideoItem> items = new ArrayList<>();
+        String matchCode = match.getMatchCode();
+        GameSetup setup = match.getGameSetup();
+        if (setup == null) {
+            throw new RuntimeException("Game setup not linked to match: " + matchId);
+        }
+        // For each player, construct file paths following a simple convention
+        for (Team t : setup.getTeams()) {
+            for (Player p : t.getPlayers()) {
+                // Only include players that have camera assigned (optional rule)
+                String playerId = p.getPlayerCode();
+                String basePath = "/videos/" + matchCode + "/";
+                String filePath = basePath + "player_" + playerId + ".mp4";
+                String thumbnailPath = "/thumbnails/" + matchCode + "/player_" + playerId + ".jpg";
+
+                VideosResponseDto.VideoItem item = VideosResponseDto.VideoItem.builder()
+                        .videoId("V_" + playerId)
+                        .playerId(playerId)
+                        .startTime(start.toString())
+                        .endTime(effectiveEnd.toString())
+                        .duration(durationStr)
+                        .filePath(filePath)
+                        .thumbnailPath(thumbnailPath)
+                        .build();
+                items.add(item);
+            }
+        }
+
+        return VideosResponseDto.builder()
+                .success(true)
+                .data(VideosResponseDto.Data.builder().videos(items).build())
+                .build();
+    }
+}

@@ -8,9 +8,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/v1/game-setup")
+@Tag(name = "Game Setup", description = "Game setup creation and update APIs")
 public class GameSetupController {
 
     @Autowired
@@ -18,6 +21,7 @@ public class GameSetupController {
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @PostMapping
+    @Operation(summary = "Create game setup", description = "Creates a new game setup")
     public ResponseEntity<?> saveGameSetup(@RequestBody GameSetupRequestDto requestDto) {
         try {
             return ResponseEntity.ok(gameSetupService.saveGameSetup(requestDto));
@@ -42,6 +46,7 @@ public class GameSetupController {
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @PutMapping("/{gameSetupId}")
+    @Operation(summary = "Update game setup", description = "Updates an existing game setup by ID")
     public ResponseEntity<?> updateGameSetup(@PathVariable String gameSetupId,
                                              @RequestBody GameSetupRequestDto requestDto) {
         try {

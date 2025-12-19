@@ -21,10 +21,12 @@ import org.springframework.web.bind.annotation.*;
 import java.security.SecureRandom;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@Tag(name = "Auth", description = "Authentication and password reset APIs")
 public class AuthController {
 
     @Autowired
@@ -52,6 +54,7 @@ public class AuthController {
 
 
     @PostMapping("/login")
+    @Operation(summary = "Login", description = "Authenticates user and returns JWT token")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
 
         User user = userRepository.findByUsernameIgnoreCase(loginRequest.getUsername())
@@ -69,12 +72,14 @@ public class AuthController {
     }
 
     @GetMapping("/logout")
+    @Operation(summary = "Logout", description = "Client-side JWT token clear (no server state)")
     public ResponseEntity<String> logout() {
         return ResponseEntity.ok("Logout successful (client-side token cleared)");
     }
 
 
     @PostMapping("/reset-password/request")
+    @Operation(summary = "Request OTP", description = "Requests an OTP to be emailed for password reset")
     public ResponseEntity<String> requestOtp(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + request.getEmail()));
@@ -103,6 +108,7 @@ public class AuthController {
 
 
     @PostMapping("/reset-password/validate")
+    @Operation(summary = "Validate OTP", description = "Validates the OTP for password reset")
     public ResponseEntity<String> validateOtp(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -119,6 +125,7 @@ public class AuthController {
 
 
     @PostMapping("/reset-password/reset")
+    @Operation(summary = "Reset password", description = "Resets password using a valid OTP")
     public ResponseEntity<String> resetPassword(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
