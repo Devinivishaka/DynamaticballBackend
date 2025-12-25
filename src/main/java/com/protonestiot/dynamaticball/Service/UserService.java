@@ -41,14 +41,26 @@ public class UserService {
 
 
     public User addReferee(UserDto userDto) {
+
+        if (userDto.getRole() == null) {
+            throw new IllegalArgumentException("Role is required");
+        }
+
+        if (userDto.getRole() != Role.REFEREE && userDto.getRole() != Role.SUPER_ADMIN) {
+            throw new IllegalArgumentException("Invalid role");
+        }
+
         User user = new User();
         user.setFirstName(userDto.getFirstName());
         user.setLastName(userDto.getLastName());
         user.setUsername(userDto.getUsername());
         user.setPassword(userDto.getPassword());
-        user.setRole(Role.REFEREE);
+
+        user.setRole(userDto.getRole());
+
         return userRepository.save(user);
     }
+
 
     public List<RefereeResponseDto> getAllRefereesDto() {
         return userRepository.findAll().stream()
