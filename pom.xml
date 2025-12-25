@@ -124,6 +124,13 @@
             <version>12.25.0</version>
         </dependency>
 
+        <!-- Azure Identity (for DefaultAzureCredential) -->
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-identity</artifactId>
+            <version>1.14.0</version>
+        </dependency>
+
         <!-- springdoc OpenAPI UI for Spring Boot 3 (Swagger UI at /swagger-ui.html) -->
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -131,6 +138,7 @@
             <version>2.7.0</version>
         </dependency>
     </dependencies>
+
 
     <build>
         <plugins>

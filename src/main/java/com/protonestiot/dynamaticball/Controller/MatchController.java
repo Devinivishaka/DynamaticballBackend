@@ -111,10 +111,4 @@ public class MatchController {
         return ResponseEntity.ok(matchService.getStreams(gameId));
     }
 
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
-    @GetMapping("/{matchId}/videos")
-    @Operation(summary = "Get match videos", description = "Retrieves recorded video footages for the match")
-    public ResponseEntity<VideosResponseDto> getVideos(@PathVariable String matchId) {
-        return ResponseEntity.ok(matchService.getVideos(matchId));
-    }
 }

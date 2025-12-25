@@ -9,6 +9,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class VideosResponseDto {
+
     private boolean success;
     private Data data;
 
@@ -18,6 +19,17 @@ public class VideosResponseDto {
     @AllArgsConstructor
     @Builder
     public static class Data {
+        private String matchId;
+        private List<PlayerVideos> players;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PlayerVideos {
+        private String playerId;
         private List<VideoItem> videos;
     }
 
@@ -28,12 +40,10 @@ public class VideosResponseDto {
     @Builder
     public static class VideoItem {
         private String videoId;
-        private String playerId;
-        private String startTime; // ISO-8601 string
-        private String endTime;   // ISO-8601 string
-        private String duration;  // e.g., "45:00"
-        private String filePath;
-        private String thumbnailPath;
+        private String startTime;
+        private String endTime;
+        private long durationSeconds;
+        private String videoUrl;
+        private String thumbnailUrl;
     }
 }
-

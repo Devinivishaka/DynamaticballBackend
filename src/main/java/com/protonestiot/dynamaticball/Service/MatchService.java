@@ -18,5 +18,5 @@ public interface MatchService {
     GenericResponseDto startRecording(StartRecordingRequestDto dto);
     void stopRecording(MatchActionRequestDto dto);
     StreamsResponseDto getStreams(String gameId);
-    VideosResponseDto getVideos(String matchId);
+
 }
