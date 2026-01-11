@@ -19,4 +19,8 @@ public interface MatchService {
     void stopRecording(MatchActionRequestDto dto);
     StreamsResponseDto getStreams(String gameId);
 
+    // --- Match stats snapshots ---
+    GenericResponseDto upsertMatchStats(String matchId, MatchStatsUpsertRequestDto dto);
+    MatchStatsResponseDto getLatestMatchStats(String matchId);
+
 }

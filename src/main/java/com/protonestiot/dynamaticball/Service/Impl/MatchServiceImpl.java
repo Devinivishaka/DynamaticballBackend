@@ -1,5 +1,7 @@
 package com.protonestiot.dynamaticball.Service.Impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.protonestiot.dynamaticball.Dto.*;
 import com.protonestiot.dynamaticball.Entity.*;
 import com.protonestiot.dynamaticball.Handler.MatchWebSocketHandler;
@@ -14,6 +16,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -27,25 +30,34 @@ public class MatchServiceImpl implements MatchService {
     private final TeamRepository teamRepository;
     private final MatchWebSocketHandler matchWebSocketHandler;
     private final MediaServiceClient mediaServiceClient;
+    private final MatchStatsSnapshotRepository matchStatsSnapshotRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private LocalDateTime parseTimestamp(String timestamp) {
         try {
             return LocalDateTime.parse(timestamp);
         } catch (Exception e) {
-            try {
-                DateTimeFormatter formatter;
-                if (timestamp.matches("^\\d{2}:\\d{2}:\\d{2}$")) {
-                    formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-                } else if (timestamp.matches("^\\d{2}:\\d{2}$")) {
-                    formatter = DateTimeFormatter.ofPattern("HH:mm");
-                } else {
-                    throw new RuntimeException("Invalid time format. Expected 'HH:mm' or 'HH:mm:ss'.");
-                }
 
-                LocalTime time = LocalTime.parse(timestamp, formatter);
-                return LocalDateTime.of(LocalDate.now(), time);
-            } catch (Exception ex) {
-                throw new RuntimeException("Invalid timestamp format. Expected 'HH:mm:ss', 'HH:mm', or ISO format (e.g., 2025-11-06T10:30:00)");
+            try {
+                Instant instant = Instant.parse(timestamp);
+                return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+            } catch (Exception ignored) {
+                try {
+                    DateTimeFormatter formatter;
+                    if (timestamp.matches("^\\d{2}:\\d{2}:\\d{2}$")) {
+                        formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+                    } else if (timestamp.matches("^\\d{2}:\\d{2}$")) {
+                        formatter = DateTimeFormatter.ofPattern("HH:mm");
+                    } else {
+                        throw new RuntimeException("Invalid time format. Expected 'HH:mm' or 'HH:mm:ss'.");
+                    }
+
+                    LocalTime time = LocalTime.parse(timestamp, formatter);
+                    return LocalDateTime.of(LocalDate.now(), time);
+                } catch (Exception ex) {
+                    throw new RuntimeException("Invalid timestamp format. Expected 'HH:mm:ss', 'HH:mm', ISO local datetime, or ISO instant (e.g., 2026-01-03T12:30:00.000Z)");
+                }
             }
         }
     }
@@ -669,4 +681,81 @@ public class MatchServiceImpl implements MatchService {
         }
     }
 
+    @Override
+    @Transactional
+    public GenericResponseDto upsertMatchStats(String matchId, MatchStatsUpsertRequestDto dto) {
+        Match match = matchRepository.findByMatchCode(matchId)
+                .orElseThrow(() -> new RuntimeException("Match not found: " + matchId));
+
+        if (dto == null) {
+            throw new RuntimeException("Request body is required");
+        }
+
+        if (dto.getMatchId() != null && !dto.getMatchId().isBlank() && !matchId.equals(dto.getMatchId())) {
+            throw new RuntimeException("matchId in path does not match matchId in body");
+        }
+
+        LocalDateTime ts = parseTimestamp(dto.getTimestamp());
+
+        String playerJson;
+        String teamJson;
+        try {
+            playerJson = objectMapper.writeValueAsString(dto.getPlayerStats());
+            teamJson = objectMapper.writeValueAsString(dto.getTeamStats());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize stats payload to JSON", e);
+        }
+
+        MatchStatsSnapshot snapshot = MatchStatsSnapshot.builder()
+                .match(match)
+                .timestamp(ts)
+                .playerStatsJson(playerJson)
+                .teamStatsJson(teamJson)
+                .build();
+
+        matchStatsSnapshotRepository.save(snapshot);
+
+        return GenericResponseDto.builder()
+                .success(true)
+                .message("Match stats stored")
+                .id(matchId)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MatchStatsResponseDto getLatestMatchStats(String matchId) {
+        MatchStatsSnapshot snapshot = matchStatsSnapshotRepository
+                .findTopByMatch_MatchCodeOrderByTimestampDesc(matchId)
+                .orElseThrow(() -> new RuntimeException("No stats found for match: " + matchId));
+
+        Map<String, MatchStatsUpsertRequestDto.PlayerStatsItemDto> playerStats;
+        Map<String, MatchStatsUpsertRequestDto.TeamStatsItemDto> teamStats;
+
+        try {
+            playerStats = objectMapper.readValue(
+                    snapshot.getPlayerStatsJson(),
+                    new TypeReference<Map<String, MatchStatsUpsertRequestDto.PlayerStatsItemDto>>() {}
+            );
+            teamStats = objectMapper.readValue(
+                    snapshot.getTeamStatsJson(),
+                    new TypeReference<Map<String, MatchStatsUpsertRequestDto.TeamStatsItemDto>>() {}
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to deserialize stored stats JSON", e);
+        }
+
+        return MatchStatsResponseDto.builder()
+                .success(true)
+                .message("OK")
+                .data(
+                        MatchStatsResponseDto.Data.builder()
+                                .matchId(matchId)
+                                .timestamp(snapshot.getTimestamp().toString())
+                                .playerStats(playerStats)
+                                .teamStats(teamStats)
+                                .build()
+                )
+                .build();
+    }
 }
