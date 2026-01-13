@@ -32,7 +32,7 @@ public class MatchWebSocketHandler extends TextWebSocketHandler {
                 if (session.isOpen()) {
                     String json;
                     if (message instanceof String s && s.trim().startsWith("{")) {
-                        // ensure JSON string passes through
+
                         json = s;
                     } else {
                         json = mapper.writeValueAsString(message);

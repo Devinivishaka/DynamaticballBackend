@@ -11,14 +11,18 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 public class WebSocketConfig implements WebSocketConfigurer {
 
     private final MatchWebSocketHandler matchWebSocketHandler;
+    private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
 
-    public WebSocketConfig(MatchWebSocketHandler matchWebSocketHandler) {
+    public WebSocketConfig(MatchWebSocketHandler matchWebSocketHandler,
+                           JwtHandshakeInterceptor jwtHandshakeInterceptor) {
         this.matchWebSocketHandler = matchWebSocketHandler;
+        this.jwtHandshakeInterceptor = jwtHandshakeInterceptor;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(matchWebSocketHandler, "/ws-match")
+                .addInterceptors(jwtHandshakeInterceptor)
                 .setAllowedOriginPatterns("*");
     }
 }
