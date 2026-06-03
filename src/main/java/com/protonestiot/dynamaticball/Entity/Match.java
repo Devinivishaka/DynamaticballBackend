@@ -1,6 +1,6 @@
 package com.protonestiot.dynamaticball.Entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,7 +30,7 @@ public class Match {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_setup_id")
-    @JsonIgnore
+    @JsonBackReference
     private GameSetup gameSetup;
 
     private LocalDateTime startTime;
@@ -56,5 +56,23 @@ public class Match {
         if (this.gameId == null && this.id != null) {
             this.gameId = String.format("G_%03d", this.id);
         }
+    }
+
+    // Optionally keep consistency when setting the gameSetup
+    public void setGameSetup(GameSetup gameSetup) {
+        // avoid infinite loop
+        if (sameAsOld(gameSetup)) return;
+        GameSetup old = this.gameSetup;
+        this.gameSetup = gameSetup;
+        if (old != null) {
+            old.getMatches().remove(this);
+        }
+        if (gameSetup != null && !gameSetup.getMatches().contains(this)) {
+            gameSetup.getMatches().add(this);
+        }
+    }
+
+    private boolean sameAsOld(GameSetup newGameSetup) {
+        return this.gameSetup == null ? newGameSetup == null : this.gameSetup.equals(newGameSetup);
     }
 }
