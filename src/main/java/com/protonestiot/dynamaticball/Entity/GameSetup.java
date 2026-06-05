@@ -1,5 +1,6 @@
 package com.protonestiot.dynamaticball.Entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -49,6 +50,30 @@ public class GameSetup {
     public void generateSetupCode() {
         if (this.setupCode == null && this.id != null) {
             this.setupCode = String.format("GS_%03d", this.id);
+        }
+    }
+
+    // Add matches one-to-many relation (bidirectional)
+    @OneToMany(mappedBy = "gameSetup", fetch = FetchType.LAZY,
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
+            orphanRemoval = true)
+    @Builder.Default
+    @JsonManagedReference
+    private List<Match> matches = new ArrayList<>();
+
+    // Helper to keep both sides in sync
+    public void addMatch(Match match) {
+        if (match == null) return;
+        if (!this.matches.contains(match)) {
+            this.matches.add(match);
+            match.setGameSetup(this);
+        }
+    }
+
+    public void removeMatch(Match match) {
+        if (match == null) return;
+        if (this.matches.remove(match)) {
+            match.setGameSetup(null);
         }
     }
 }
