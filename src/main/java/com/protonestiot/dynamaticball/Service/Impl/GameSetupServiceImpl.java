@@ -94,7 +94,7 @@ public class GameSetupServiceImpl implements GameSetupService {
                 .teamAId(teamAId)
                 .teamBId(teamBId)
                 .teams(getTeamsResponse(teamA, teamB))
-                .message("Game setup saved successfully. You can now add players.")
+                .message("Game setup saved successfully.")
                 .build();
     }
 
