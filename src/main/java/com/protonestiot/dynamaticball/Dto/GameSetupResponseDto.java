@@ -2,6 +2,8 @@ package com.protonestiot.dynamaticball.Dto;
 
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,4 +16,24 @@ public class GameSetupResponseDto {
     private Long teamAId;
     private Long teamBId;
 
+    private TeamsResponse teams;
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class TeamsResponse {
+        private TeamResponse teamA;
+        private TeamResponse teamB;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class TeamResponse {
+        private Long teamId;
+        private List<PlayerResponse> players;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class PlayerResponse {
+        private Long id;
+        private String playerId;
+    }
 }
+

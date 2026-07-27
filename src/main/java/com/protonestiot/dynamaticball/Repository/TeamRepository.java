@@ -7,5 +7,5 @@ import java.util.Optional;
 
 public interface TeamRepository extends JpaRepository<Team, Long> {
 
-
+    Optional<Team> findByGameSetup_SetupCodeAndTeamKey(String setupCode, String teamKey);
 }

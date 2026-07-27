@@ -21,8 +21,10 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
-    public Player addPlayer(PlayerRequestDto dto) {
+    public Player addPlayer(String gameSetupId, String teamKey, PlayerRequestDto dto) {
         if (dto == null) throw new RuntimeException("Player data cannot be null.");
+        if (gameSetupId == null || gameSetupId.trim().isEmpty()) throw new RuntimeException("Game setup ID cannot be null.");
+        if (teamKey == null || teamKey.trim().isEmpty()) throw new RuntimeException("Team key cannot be null.");
 
         // Validate required fields
         if (dto.getPlayerId() == null || dto.getPlayerId().trim().isEmpty())
@@ -35,15 +37,13 @@ public class PlayerServiceImpl implements PlayerService {
             throw new RuntimeException("Left wristband value cannot be null or empty.");
         if (dto.getCamera() == null || dto.getCamera().trim().isEmpty())
             throw new RuntimeException("Camera value cannot be null or empty.");
-        if (dto.getTeamId() == null)
-            throw new RuntimeException("Team ID must be provided.");
 
-        Team team = teamRepository.findById(dto.getTeamId())
-                .orElseThrow(() -> new RuntimeException("Team not found with ID: " + dto.getTeamId()));
+        Team team = teamRepository.findByGameSetup_SetupCodeAndTeamKey(gameSetupId, teamKey)
+                .orElseThrow(() -> new RuntimeException("Team not found for game setup: " + gameSetupId + " and team: " + teamKey));
 
 
-        Long gameSetupId = team.getGameSetup().getId();
-        boolean existsInGameSetup = playerRepository.existsByPlayerCodeAndTeam_GameSetup_Id(dto.getPlayerId(), gameSetupId);
+        Long dbGameSetupId = team.getGameSetup().getId();
+        boolean existsInGameSetup = playerRepository.existsByPlayerCodeAndTeam_GameSetup_Id(dto.getPlayerId(), dbGameSetupId);
         if (existsInGameSetup) {
             throw new RuntimeException("Player code '" + dto.getPlayerId() + "' already exists in this match.");
         }

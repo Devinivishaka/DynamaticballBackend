@@ -11,6 +11,7 @@ import com.protonestiot.dynamaticball.Entity.Team;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -81,24 +82,59 @@ public class GameSetupServiceImpl implements GameSetupService {
 
         GameSetup saved = gameSetupRepository.save(entity);
 
-        Long teamAId = null;
-        Long teamBId = null;
-        if (saved.getTeams() != null && saved.getTeams().size() >= 2) {
-            teamAId = saved.getTeams().get(0).getId();
-            teamBId = saved.getTeams().get(1).getId();
-        }
+        Team teamA = saved.getTeams().stream().filter(t -> "teamA".equals(t.getTeamKey())).findFirst().orElse(null);
+        Team teamB = saved.getTeams().stream().filter(t -> "teamB".equals(t.getTeamKey())).findFirst().orElse(null);
+
+        Long teamAId = teamA != null ? teamA.getId() : null;
+        Long teamBId = teamB != null ? teamB.getId() : null;
 
         return GameSetupResponseDto.builder()
                 .success(true)
                 .gameSetupId(saved.getSetupCode())
                 .teamAId(teamAId)
                 .teamBId(teamBId)
+                .teams(getTeamsResponse(teamA, teamB))
                 .message("Game setup saved successfully. You can now add players.")
                 .build();
     }
 
     private boolean isEmpty(String v) {
         return v == null || v.trim().isEmpty();
+    }
+
+    private GameSetupResponseDto.TeamsResponse getTeamsResponse(Team teamA, Team teamB) {
+        if (teamA == null && teamB == null) return null;
+
+        GameSetupResponseDto.TeamResponse teamAResponse = null;
+        if (teamA != null) {
+            teamAResponse = GameSetupResponseDto.TeamResponse.builder()
+                    .teamId(teamA.getId())
+                    .players(teamA.getPlayers().stream()
+                            .map(p -> GameSetupResponseDto.PlayerResponse.builder()
+                                    .id(p.getId())
+                                    .playerId(p.getPlayerCode())
+                                    .build())
+                            .collect(Collectors.toList()))
+                    .build();
+        }
+
+        GameSetupResponseDto.TeamResponse teamBResponse = null;
+        if (teamB != null) {
+            teamBResponse = GameSetupResponseDto.TeamResponse.builder()
+                    .teamId(teamB.getId())
+                    .players(teamB.getPlayers().stream()
+                            .map(p -> GameSetupResponseDto.PlayerResponse.builder()
+                                    .id(p.getId())
+                                    .playerId(p.getPlayerCode())
+                                    .build())
+                            .collect(Collectors.toList()))
+                    .build();
+        }
+
+        return GameSetupResponseDto.TeamsResponse.builder()
+                .teamA(teamAResponse)
+                .teamB(teamBResponse)
+                .build();
     }
 
 
@@ -131,23 +167,21 @@ public class GameSetupServiceImpl implements GameSetupService {
 
         GameSetupMapper.updateEntity(existing, requestDto);
 
-        gameSetupRepository.save(existing);
+        GameSetup saved = gameSetupRepository.save(existing);
+
+        Team teamA = saved.getTeams().stream().filter(t -> "teamA".equals(t.getTeamKey())).findFirst().orElse(null);
+        Team teamB = saved.getTeams().stream().filter(t -> "teamB".equals(t.getTeamKey())).findFirst().orElse(null);
+
+        Long teamAId = teamA != null ? teamA.getId() : null;
+        Long teamBId = teamB != null ? teamB.getId() : null;
 
         return GameSetupResponseDto.builder()
                 .success(true)
-                .gameSetupId(existing.getSetupCode())
+                .gameSetupId(saved.getSetupCode())
                 .message("Game setup updated successfully")
-                .teamAId(existing.getTeams().stream()
-                        .filter(team -> "teamA".equals(team.getTeamKey()))
-                        .map(Team::getId)
-                        .findFirst()
-                        .orElse(null))
-                .teamBId(existing.getTeams().stream()
-                        .filter(team -> "teamB".equals(team.getTeamKey()))
-                        .map(Team::getId)
-                        .findFirst()
-                        .orElse(null))
-
+                .teamAId(teamAId)
+                .teamBId(teamBId)
+                .teams(getTeamsResponse(teamA, teamB))
                 .build();
     }
 
