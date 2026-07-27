@@ -72,27 +72,46 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
-    public Player updatePlayerById(Long id, PlayerRequestDto dto) {
-        if (id == null) throw new RuntimeException("Player ID cannot be null for update.");
-        if (dto == null) throw new RuntimeException("Update data cannot be null.");
+    public void deletePlayerInGameSetup(String gameSetupId, Long id) {
+        if (gameSetupId == null || gameSetupId.trim().isEmpty()) throw new IllegalArgumentException("Game setup ID cannot be null.");
+        if (id == null) throw new IllegalArgumentException("Player ID cannot be null for deletion.");
 
         Player player = playerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Player not found with ID: " + id));
+
+        if (!player.getTeam().getGameSetup().getSetupCode().equals(gameSetupId)) {
+            throw new IllegalArgumentException("Player with ID: " + id + " does not belong to game setup: " + gameSetupId);
+        }
+
+        playerRepository.delete(player);
+        broadcastPlayerChange("delete", player);
+    }
+
+    @Override
+    @Transactional
+    public com.protonestiot.dynamaticball.Dto.PlayerResponseDto updatePlayerInGameSetup(String gameSetupId, Long id, PlayerRequestDto dto) {
+        if (gameSetupId == null || gameSetupId.trim().isEmpty()) throw new IllegalArgumentException("Game setup ID cannot be null.");
+        if (id == null) throw new IllegalArgumentException("Player ID cannot be null.");
+        if (dto == null) throw new IllegalArgumentException("Update data cannot be null.");
+
+        Player player = playerRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Player not found with ID: " + id));
+
+        if (!player.getTeam().getGameSetup().getSetupCode().equals(gameSetupId)) {
+            throw new IllegalArgumentException("Player with ID: " + id + " does not belong to game setup: " + gameSetupId);
+        }
 
         Long currentGameSetupId = player.getTeam().getGameSetup().getId();
-
 
         if (dto.getPlayerId() != null && !dto.getPlayerId().trim().isEmpty()) {
             boolean existsInGameSetup = playerRepository.existsByPlayerCodeAndTeam_GameSetup_Id(dto.getPlayerId(), currentGameSetupId);
 
-
             if (existsInGameSetup && !dto.getPlayerId().equals(player.getPlayerCode())) {
-                throw new RuntimeException("Player code '" + dto.getPlayerId() + "' already exists in this match.");
+                throw new IllegalArgumentException("Player code '" + dto.getPlayerId() + "' already exists in this match.");
             }
 
             player.setPlayerCode(dto.getPlayerId());
         }
-
 
         if (dto.getBelt() != null && !dto.getBelt().trim().isEmpty())
             player.setBelt(dto.getBelt());
@@ -103,25 +122,23 @@ public class PlayerServiceImpl implements PlayerService {
         if (dto.getCamera() != null && !dto.getCamera().trim().isEmpty())
             player.setCamera(dto.getCamera());
 
-
         if (dto.getTeamId() != null && !dto.getTeamId().equals(player.getTeam().getId())) {
             Team newTeam = teamRepository.findById(dto.getTeamId())
-                    .orElseThrow(() -> new RuntimeException("Team not found with ID: " + dto.getTeamId()));
+                    .orElseThrow(() -> new IllegalArgumentException("Team not found with ID: " + dto.getTeamId()));
 
             int playersPerTeam = newTeam.getGameSetup().getPlayersPerTeam();
             long currentCount = playerRepository.countByTeam(newTeam);
 
             if (currentCount >= playersPerTeam) {
-                throw new RuntimeException("Cannot move player. Team '" + newTeam.getTeamKey() +
+                throw new IllegalArgumentException("Cannot move player. Team '" + newTeam.getTeamKey() +
                         "' already has the maximum of " + playersPerTeam + " players.");
             }
-
 
             Long newGameSetupId = newTeam.getGameSetup().getId();
             boolean existsInNewGameSetup = playerRepository.existsByPlayerCodeAndTeam_GameSetup_Id(player.getPlayerCode(), newGameSetupId);
 
             if (existsInNewGameSetup && !newTeam.equals(player.getTeam())) {
-                throw new RuntimeException("Player code '" + player.getPlayerCode() + "' already exists in this match.");
+                throw new IllegalArgumentException("Player code '" + player.getPlayerCode() + "' already exists in this match.");
             }
 
             player.setTeam(newTeam);
@@ -129,22 +146,21 @@ public class PlayerServiceImpl implements PlayerService {
 
         Player updated = playerRepository.save(player);
         broadcastPlayerChange("update", updated);
-        return updated;
-    }
 
-    @Override
-    @Transactional
-    public void deletePlayerById(Long id) {
-        if (id == null) throw new RuntimeException("Player ID cannot be null for deletion.");
-
-        Player player = playerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + id));
-
-        playerRepository.delete(player);
-        broadcastPlayerChange("delete", player);
+        return com.protonestiot.dynamaticball.Dto.PlayerResponseDto.builder()
+                .success(true)
+                .message("Player updated successfully.")
+                .playerId(updated.getPlayerCode())
+                .belt(updated.getBelt())
+                .rightWristband(updated.getRightWristband())
+                .leftWristband(updated.getLeftWristband())
+                .camera(updated.getCamera())
+                .teamId(updated.getTeam().getId())
+                .build();
     }
 
     private void broadcastPlayerChange(String action, Player player) {
+
         String json = "{ " +
                 "\"event\": \"" + action + "\"," +
                 "\"playerId\": \"" + player.getPlayerCode() + "\"," +

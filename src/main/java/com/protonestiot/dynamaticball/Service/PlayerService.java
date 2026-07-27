@@ -5,6 +5,6 @@ import com.protonestiot.dynamaticball.Entity.Player;
 
 public interface PlayerService {
     Player addPlayer(String gameSetupId, String teamKey, PlayerRequestDto dto);
-    Player updatePlayerById(Long id, PlayerRequestDto dto);
-    void deletePlayerById(Long id);
+    com.protonestiot.dynamaticball.Dto.PlayerResponseDto updatePlayerInGameSetup(String gameSetupId, Long id, PlayerRequestDto dto);
+    void deletePlayerInGameSetup(String gameSetupId, Long id);
 }

@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.protonestiot.dynamaticball.Dto.PlayerRequestDto;
+import com.protonestiot.dynamaticball.Service.PlayerService;
 
 @RestController
 @RequestMapping("/api/v1/game-setup")
@@ -18,6 +20,9 @@ public class GameSetupController {
 
     @Autowired
     private GameSetupService gameSetupService;
+
+    @Autowired
+    private PlayerService playerService;
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @PostMapping
@@ -66,6 +71,63 @@ public class GameSetupController {
                     "error", "Internal Server Error",
                     "message", e.getMessage(),
                     "path", "/api/v1/game-setup/" + gameSetupId
+            ));
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
+    @PutMapping("/{gameSetupId}/players/{id}")
+    @Operation(summary = "Update player", description = "Updates a player in a specific game setup")
+    public ResponseEntity<?> updatePlayerInGameSetup(@PathVariable String gameSetupId,
+                                                     @PathVariable Long id,
+                                                     @RequestBody PlayerRequestDto requestDto) {
+        try {
+            return ResponseEntity.ok(playerService.updatePlayerInGameSetup(gameSetupId, id, requestDto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "status", 400,
+                    "error", "Player Update Error",
+                    "message", e.getMessage(),
+                    "path", "/api/v1/game-setup/" + gameSetupId + "/players/" + id
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "status", 500,
+                    "error", "Internal Server Error",
+                    "message", e.getMessage(),
+                    "path", "/api/v1/game-setup/" + gameSetupId + "/players/" + id
+            ));
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
+    @DeleteMapping("/{gameSetupId}/players/{id}")
+    @Operation(summary = "Delete player", description = "Deletes a player from a specific game setup")
+    public ResponseEntity<?> deletePlayerInGameSetup(@PathVariable String gameSetupId,
+                                                     @PathVariable Long id) {
+        try {
+            playerService.deletePlayerInGameSetup(gameSetupId, id);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Player deleted successfully."
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "status", 400,
+                    "error", "Player Deletion Error",
+                    "message", e.getMessage(),
+                    "path", "/api/v1/game-setup/" + gameSetupId + "/players/" + id
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "status", 500,
+                    "error", "Internal Server Error",
+                    "message", e.getMessage(),
+                    "path", "/api/v1/game-setup/" + gameSetupId + "/players/" + id
             ));
         }
     }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PlayerRepository extends JpaRepository<Player, Long> {
     long countByTeam(Team team);
     boolean existsByPlayerCodeAndTeam_GameSetup_Id(String playerCode, Long gameSetupId);
+    java.util.Optional<Player> findByPlayerCodeAndTeam_GameSetup_SetupCode(String playerCode, String setupCode);
 
 
 
