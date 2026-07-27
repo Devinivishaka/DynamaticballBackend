@@ -99,10 +99,11 @@ public class GameHistoryService {
     }
 
     private String calculateDuration(LocalDateTime start, LocalDateTime end) {
-        if (start == null || end == null) return "00:00";
-        Duration d = Duration.between(start, end);
-        long minutes = d.toMinutes();
-        long seconds = d.minusMinutes(minutes).getSeconds();
-        return String.format("%02d:%02d", minutes, seconds);
+        if (start == null || end == null) return "00:00:00";
+        Duration d = Duration.between(start, end).abs();
+        long hours = d.toHours();
+        long minutes = d.toMinutesPart();
+        long seconds = d.toSecondsPart();
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 }
