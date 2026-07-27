@@ -25,5 +25,8 @@ public class PlayerRequestDto {
     @NotBlank(message = "Camera field cannot be empty")
     private String camera;
 
+    @NotNull(message = "Team ID cannot be null")
+    private Long teamId;
+
     private String gameSetupId; // optional field
 }
