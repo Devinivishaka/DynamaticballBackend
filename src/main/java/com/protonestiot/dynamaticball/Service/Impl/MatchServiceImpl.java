@@ -35,6 +35,9 @@ public class MatchServiceImpl implements MatchService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private LocalDateTime parseTimestamp(String timestamp) {
+        if (timestamp == null || timestamp.isBlank()) {
+            throw new IllegalArgumentException("Timestamp is missing or null");
+        }
         try {
             return LocalDateTime.parse(timestamp);
         } catch (Exception e) {
