@@ -35,10 +35,10 @@ public class UserController {
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @PostMapping("/referees")
-    @Operation(summary = "Add referee", description = "Creates a new referee user")
-    public ResponseEntity<User> addReferee(@RequestBody @Valid UserDto userDto) {
-        return ResponseEntity.ok(userService.addReferee(userDto));
+    @PostMapping
+    @Operation(summary = "Add user", description = "Creates a new user")
+    public ResponseEntity<User> addUser(@RequestBody @Valid UserDto userDto) {
+        return ResponseEntity.ok(userService.addUser(userDto));
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")

@@ -40,7 +40,7 @@ public class UserService {
     private String endpoint;
 
 
-    public User addReferee(UserDto userDto) {
+    public User addUser(UserDto userDto) {
 
         if (userDto.getRole() == null) {
             throw new IllegalArgumentException("Role is required");
