@@ -1,5 +1,6 @@
 package com.protonestiot.dynamaticball.Dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.*;
 
 @Getter
@@ -12,5 +13,6 @@ public class PenaltyRequestDto {
     private String eventType;
     private String playerId;
     private String penaltyTime;
+    @JsonAlias("gameTime")
     private String timestamp;
 }
