@@ -34,6 +34,7 @@ public class Team {
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties("team")
     private List<Player> players = new ArrayList<>();
 
     @Column(nullable = false)

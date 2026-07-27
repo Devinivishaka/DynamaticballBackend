@@ -21,7 +21,7 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
-    public Player addPlayer(String gameSetupId, String teamKey, PlayerRequestDto dto) {
+    public com.protonestiot.dynamaticball.Dto.PlayerResponseDto addPlayer(String gameSetupId, String teamKey, PlayerRequestDto dto) {
         if (dto == null) throw new RuntimeException("Player data cannot be null.");
         if (gameSetupId == null || gameSetupId.trim().isEmpty()) throw new RuntimeException("Game setup ID cannot be null.");
         if (teamKey == null || teamKey.trim().isEmpty()) throw new RuntimeException("Team key cannot be null.");
@@ -67,7 +67,17 @@ public class PlayerServiceImpl implements PlayerService {
 
         Player saved = playerRepository.save(player);
         broadcastPlayerChange("add", saved);
-        return saved;
+        
+        return com.protonestiot.dynamaticball.Dto.PlayerResponseDto.builder()
+                .success(true)
+                .message("Player added successfully.")
+                .playerId(saved.getPlayerCode())
+                .belt(saved.getBelt())
+                .rightWristband(saved.getRightWristband())
+                .leftWristband(saved.getLeftWristband())
+                .camera(saved.getCamera())
+                .teamId(saved.getTeam().getId())
+                .build();
     }
 
     @Override

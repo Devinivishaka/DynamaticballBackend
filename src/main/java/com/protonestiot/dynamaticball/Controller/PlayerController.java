@@ -22,10 +22,28 @@ public class PlayerController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @PostMapping("/{gameSetupId}/{teamKey}")
     @Operation(summary = "Add player", description = "Adds a new player to a specific game setup and team")
-    public ResponseEntity<Player> addPlayer(@PathVariable String gameSetupId,
+    public ResponseEntity<?> addPlayer(@PathVariable String gameSetupId,
                                             @PathVariable String teamKey,
                                             @Valid @RequestBody PlayerRequestDto dto) {
-        return ResponseEntity.ok(playerService.addPlayer(gameSetupId, teamKey, dto));
+        try {
+            return ResponseEntity.ok(playerService.addPlayer(gameSetupId, teamKey, dto));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "success", false,
+                    "status", 400,
+                    "error", "Player Addition Error",
+                    "message", e.getMessage(),
+                    "path", "/api/v1/players/" + gameSetupId + "/" + teamKey
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(java.util.Map.of(
+                    "success", false,
+                    "status", 500,
+                    "error", "Internal Server Error",
+                    "message", e.getMessage(),
+                    "path", "/api/v1/players/" + gameSetupId + "/" + teamKey
+            ));
+        }
     }
 
 }
