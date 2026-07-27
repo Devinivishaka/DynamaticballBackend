@@ -32,7 +32,7 @@ public class GameSetupResponseDto {
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class PlayerResponse {
-        private Long id;
+        private Long playerRecordId;
         private String playerId;
     }
 }
