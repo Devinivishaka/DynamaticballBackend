@@ -136,6 +136,7 @@ public class UserService {
         userMap.put("lastName", user.getLastName());
         userMap.put("username", user.getUsername());
         userMap.put("password", user.getPassword());
+        userMap.put("role", user.getRole());
         userMap.put("createdAt", user.getCreatedAt());
         userMap.put("lastLogin", user.getLastLogin());
         userMap.put("profileImageUrl", user.getProfileImageUrl());
