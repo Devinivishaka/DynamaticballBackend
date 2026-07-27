@@ -20,10 +20,10 @@ public class PlayerController {
     private final PlayerService playerService;
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
-    @PostMapping("/{gameSetupId}")
+    @PostMapping("/{gameSetupId}/{teamKey}")
     @Operation(summary = "Add player", description = "Adds a new player")
-    public ResponseEntity<Player> addPlayer(@PathVariable String gameSetupId, @Valid @RequestBody PlayerRequestDto dto) {
-        return ResponseEntity.ok(playerService.addPlayer(gameSetupId, dto));
+    public ResponseEntity<Player> addPlayer(@PathVariable String gameSetupId, @PathVariable String teamKey, @Valid @RequestBody PlayerRequestDto dto) {
+        return ResponseEntity.ok(playerService.addPlayer(gameSetupId, teamKey, dto));
     }
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")

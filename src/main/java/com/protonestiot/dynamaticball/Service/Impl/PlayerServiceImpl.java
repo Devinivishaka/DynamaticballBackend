@@ -24,7 +24,7 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
-    public Player addPlayer(String gameSetupId, PlayerRequestDto dto) {
+    public Player addPlayer(String gameSetupId, String teamKey, PlayerRequestDto dto) {
         if (dto == null) throw new RuntimeException("Player data cannot be null.");
 
         // Validate required fields
@@ -49,17 +49,14 @@ public class PlayerServiceImpl implements PlayerService {
 
         int playersPerTeam = gameSetup.getPlayersPerTeam();
         
-        Team assignedTeam = null;
-        for (Team t : gameSetup.getTeams()) {
-            long currentCount = playerRepository.countByTeam(t);
-            if (currentCount < playersPerTeam) {
-                assignedTeam = t;
-                break;
-            }
-        }
+        Team assignedTeam = gameSetup.getTeams().stream()
+                .filter(t -> t.getTeamKey().equals(teamKey))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Team not found with key: " + teamKey));
 
-        if (assignedTeam == null) {
-            throw new RuntimeException("Cannot add more players. All teams in this game setup have reached the maximum of " + playersPerTeam + " players.");
+        long currentCount = playerRepository.countByTeam(assignedTeam);
+        if (currentCount >= playersPerTeam) {
+            throw new RuntimeException("Cannot add more players. Team '" + teamKey + "' already has the maximum of " + playersPerTeam + " players.");
         }
 
         Player player = Player.builder()
