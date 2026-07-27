@@ -639,7 +639,11 @@ public class MatchServiceImpl implements MatchService {
                     .id(gameId)
                     .build();
         } catch (MediaServiceClient.MediaServiceException e) {
-            throw new RuntimeException("Failed to stop recording: " + e.getMessage(), e);
+            if (e.getStatus() == 404) {
+                System.err.println("MediaService returned 404. Recording was likely not active for game: " + gameId);
+            } else {
+                throw new RuntimeException("Failed to stop recording: " + e.getMessage(), e);
+            }
         }
     }
 
