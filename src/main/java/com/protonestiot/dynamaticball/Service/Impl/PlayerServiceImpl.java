@@ -3,6 +3,8 @@ package com.protonestiot.dynamaticball.Service.Impl;
 import com.protonestiot.dynamaticball.Dto.PlayerRequestDto;
 import com.protonestiot.dynamaticball.Entity.Player;
 import com.protonestiot.dynamaticball.Entity.Team;
+import com.protonestiot.dynamaticball.Entity.GameSetup;
+import com.protonestiot.dynamaticball.Repository.GameSetupRepository;
 import com.protonestiot.dynamaticball.Repository.PlayerRepository;
 import com.protonestiot.dynamaticball.Repository.TeamRepository;
 import com.protonestiot.dynamaticball.Service.PlayerService;
@@ -17,11 +19,12 @@ public class PlayerServiceImpl implements PlayerService {
 
     private final PlayerRepository playerRepository;
     private final TeamRepository teamRepository;
+    private final GameSetupRepository gameSetupRepository;
     private final MatchWebSocketHandler matchWebSocketHandler;
 
     @Override
     @Transactional
-    public Player addPlayer(PlayerRequestDto dto) {
+    public Player addPlayer(String gameSetupId, PlayerRequestDto dto) {
         if (dto == null) throw new RuntimeException("Player data cannot be null.");
 
         // Validate required fields
@@ -35,25 +38,28 @@ public class PlayerServiceImpl implements PlayerService {
             throw new RuntimeException("Left wristband value cannot be null or empty.");
         if (dto.getCamera() == null || dto.getCamera().trim().isEmpty())
             throw new RuntimeException("Camera value cannot be null or empty.");
-        if (dto.getTeamId() == null)
-            throw new RuntimeException("Team ID must be provided.");
 
-        Team team = teamRepository.findById(dto.getTeamId())
-                .orElseThrow(() -> new RuntimeException("Team not found with ID: " + dto.getTeamId()));
+        GameSetup gameSetup = gameSetupRepository.findBySetupCode(gameSetupId)
+                .orElseThrow(() -> new RuntimeException("GameSetup not found with ID: " + gameSetupId));
 
-
-        Long gameSetupId = team.getGameSetup().getId();
-        boolean existsInGameSetup = playerRepository.existsByPlayerCodeAndTeam_GameSetup_Id(dto.getPlayerId(), gameSetupId);
+        boolean existsInGameSetup = playerRepository.existsByPlayerCodeAndTeam_GameSetup_Id(dto.getPlayerId(), gameSetup.getId());
         if (existsInGameSetup) {
             throw new RuntimeException("Player code '" + dto.getPlayerId() + "' already exists in this match.");
         }
 
+        int playersPerTeam = gameSetup.getPlayersPerTeam();
+        
+        Team assignedTeam = null;
+        for (Team t : gameSetup.getTeams()) {
+            long currentCount = playerRepository.countByTeam(t);
+            if (currentCount < playersPerTeam) {
+                assignedTeam = t;
+                break;
+            }
+        }
 
-        int playersPerTeam = team.getGameSetup().getPlayersPerTeam();
-        long currentCount = playerRepository.countByTeam(team);
-        if (currentCount >= playersPerTeam) {
-            throw new RuntimeException("Cannot add more players. Team '" + team.getTeamKey() +
-                    "' already has the maximum of " + playersPerTeam + " players.");
+        if (assignedTeam == null) {
+            throw new RuntimeException("Cannot add more players. All teams in this game setup have reached the maximum of " + playersPerTeam + " players.");
         }
 
         Player player = Player.builder()
@@ -62,7 +68,7 @@ public class PlayerServiceImpl implements PlayerService {
                 .rightWristband(dto.getRightWristband())
                 .leftWristband(dto.getLeftWristband())
                 .camera(dto.getCamera())
-                .team(team)
+                .team(assignedTeam)
                 .build();
 
         Player saved = playerRepository.save(player);
@@ -104,28 +110,6 @@ public class PlayerServiceImpl implements PlayerService {
             player.setCamera(dto.getCamera());
 
 
-        if (dto.getTeamId() != null && !dto.getTeamId().equals(player.getTeam().getId())) {
-            Team newTeam = teamRepository.findById(dto.getTeamId())
-                    .orElseThrow(() -> new RuntimeException("Team not found with ID: " + dto.getTeamId()));
-
-            int playersPerTeam = newTeam.getGameSetup().getPlayersPerTeam();
-            long currentCount = playerRepository.countByTeam(newTeam);
-
-            if (currentCount >= playersPerTeam) {
-                throw new RuntimeException("Cannot move player. Team '" + newTeam.getTeamKey() +
-                        "' already has the maximum of " + playersPerTeam + " players.");
-            }
-
-
-            Long newGameSetupId = newTeam.getGameSetup().getId();
-            boolean existsInNewGameSetup = playerRepository.existsByPlayerCodeAndTeam_GameSetup_Id(player.getPlayerCode(), newGameSetupId);
-
-            if (existsInNewGameSetup && !newTeam.equals(player.getTeam())) {
-                throw new RuntimeException("Player code '" + player.getPlayerCode() + "' already exists in this match.");
-            }
-
-            player.setTeam(newTeam);
-        }
 
         Player updated = playerRepository.save(player);
         broadcastPlayerChange("update", updated);
