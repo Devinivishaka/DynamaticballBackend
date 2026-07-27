@@ -206,6 +206,7 @@ public class MatchServiceImpl implements MatchService {
                 .success(true)
                 .message(action.substring(0, 1).toUpperCase() + action.substring(1) + " applied successfully")
                 .id(match.getMatchCode())
+                .gameId(match.getGameId())
                 .build();
     }
 
@@ -401,9 +402,9 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional(readOnly = true)
-    public GenericMatchSummaryResponse getMatchSummary(String matchCode) {
-        Match match = matchRepository.findByMatchCode(matchCode)
-                .orElseThrow(() -> new RuntimeException("Match not found: " + matchCode));
+    public GenericMatchSummaryResponse getMatchSummary(String gameId) {
+        Match match = matchRepository.findByGameId(gameId)
+                .orElseThrow(() -> new RuntimeException("Match not found: " + gameId));
 
         GameSetup gs = match.getGameSetup();
 
@@ -483,9 +484,9 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional(readOnly = true)
-    public GenericMatchTimelineResponse getMatchTimeline(String matchCode) {
-        Match match = matchRepository.findByMatchCode(matchCode)
-                .orElseThrow(() -> new RuntimeException("Match not found: " + matchCode));
+    public GenericMatchTimelineResponse getMatchTimeline(String gameId) {
+        Match match = matchRepository.findByGameId(gameId)
+                .orElseThrow(() -> new RuntimeException("Match not found: " + gameId));
 
         LocalDateTime matchStart = match.getStartTime();
 
@@ -523,9 +524,9 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional(readOnly = true)
-    public GenericPlayerStatsResponse getPlayerStatistics(String matchCode) {
-        Match match = matchRepository.findByMatchCode(matchCode)
-                .orElseThrow(() -> new RuntimeException("Match not found: " + matchCode));
+    public GenericPlayerStatsResponse getPlayerStatistics(String gameId) {
+        Match match = matchRepository.findByGameId(gameId)
+                .orElseThrow(() -> new RuntimeException("Match not found: " + gameId));
 
         GameSetup gs = match.getGameSetup();
 

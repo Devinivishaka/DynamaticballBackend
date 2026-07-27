@@ -76,26 +76,6 @@ public class MatchController {
         return ResponseEntity.ok(matchService.halftime(dto));
     }
 
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
-    @GetMapping("/{matchId}/summary")
-    @Operation(summary = "Get match summary", description = "Retrieves match summary by matchId")
-    public ResponseEntity<GenericMatchSummaryResponse> getMatchSummary(@PathVariable String matchId) {
-        return ResponseEntity.ok(matchService.getMatchSummary(matchId));
-    }
-
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
-    @GetMapping("/{matchId}/timeline")
-    @Operation(summary = "Get match timeline", description = "Retrieves match timeline events by matchId")
-    public GenericMatchTimelineResponse getMatchTimeline(@PathVariable("matchId") String matchId) {
-        return matchService.getMatchTimeline(matchId);
-    }
-
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
-    @GetMapping("/{matchId}/player-stats")
-    @Operation(summary = "Get player stats", description = "Retrieves aggregated player statistics by matchId")
-    public GenericPlayerStatsResponse getPlayerStatistics(@PathVariable("matchId") String matchId) {
-        return matchService.getPlayerStatistics(matchId);
-    }
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @PostMapping("/recording/start")

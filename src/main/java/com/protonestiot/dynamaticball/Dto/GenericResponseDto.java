@@ -11,4 +11,5 @@ public class GenericResponseDto {
     private boolean success;
     private String message;
     private String id;
+    private String gameId;
 }

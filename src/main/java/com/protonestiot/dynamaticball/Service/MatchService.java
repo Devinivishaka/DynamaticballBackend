@@ -9,9 +9,9 @@ public interface MatchService {
     GenericResponseDto addBallEvent(BallEventRequestDto dto);
     GenericResponseDto halftime(MatchActionRequestDto dto);
     MatchStatusDto getMatchStatus(String matchCode);
-    GenericMatchSummaryResponse getMatchSummary(String matchCode);
-    GenericMatchTimelineResponse getMatchTimeline(String matchCode);
-    GenericPlayerStatsResponse getPlayerStatistics(String matchCode);
+    GenericMatchSummaryResponse getMatchSummary(String gameId);
+    GenericMatchTimelineResponse getMatchTimeline(String gameId);
+    GenericPlayerStatsResponse getPlayerStatistics(String gameId);
     GenericResponseDto resumeMatch(MatchActionRequestDto dto);
     GenericResponseDto stopMatch(MatchActionRequestDto dto);
     GenericResponseDto addPenaltyEvent(PenaltyRequestDto dto);
