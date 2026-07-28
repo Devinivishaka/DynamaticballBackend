@@ -9,6 +9,7 @@ import lombok.*;
 @AllArgsConstructor
 public class GenericMatchSummaryResponse {
     private boolean success;
+    private String message;
     private MatchSummaryDto data;
 }
 

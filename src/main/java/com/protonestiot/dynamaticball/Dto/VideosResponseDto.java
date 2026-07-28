@@ -11,6 +11,7 @@ import java.util.List;
 public class VideosResponseDto {
 
     private boolean success;
+    private String message;
     private Data data;
 
     @Getter

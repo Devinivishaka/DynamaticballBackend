@@ -7,8 +7,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GameHistoryResponseDto {
+public class ApiResponse<T> {
     private boolean success;
     private String message;
-    private GameHistoryDataDto data;
+    private T data;
 }

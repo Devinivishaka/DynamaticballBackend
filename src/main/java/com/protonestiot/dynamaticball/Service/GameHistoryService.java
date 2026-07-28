@@ -93,6 +93,7 @@ public class GameHistoryService {
 
         return GameHistoryResponseDto.builder()
                 .success(true)
+                .message("Game history retrieved successfully")
                 .data(data)
                 .build();
     }

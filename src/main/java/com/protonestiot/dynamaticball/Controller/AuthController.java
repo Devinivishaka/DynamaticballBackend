@@ -1,5 +1,6 @@
 package com.protonestiot.dynamaticball.Controller;
 
+import com.protonestiot.dynamaticball.Dto.ApiResponse;
 import com.protonestiot.dynamaticball.Dto.ForgetPassword;
 import com.protonestiot.dynamaticball.Dto.LoginRequest;
 import com.protonestiot.dynamaticball.Dto.LoginResponse;
@@ -73,14 +74,17 @@ public class AuthController {
 
     @GetMapping("/logout")
     @Operation(summary = "Logout", description = "Client-side JWT token clear (no server state)")
-    public ResponseEntity<String> logout() {
-        return ResponseEntity.ok("Logout successful (client-side token cleared)");
+    public ResponseEntity<ApiResponse<Void>> logout() {
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message("Logout successful")
+                .build());
     }
 
 
     @PostMapping("/reset-password/request")
     @Operation(summary = "Request OTP", description = "Requests an OTP to be emailed for password reset")
-    public ResponseEntity<String> requestOtp(@RequestBody ForgetPassword request) {
+    public ResponseEntity<ApiResponse<Void>> requestOtp(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + request.getEmail()));
 
@@ -103,13 +107,16 @@ public class AuthController {
             throw new RuntimeException("Failed to send OTP email");
         }
 
-        return ResponseEntity.ok("OTP sent to your email.");
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message("OTP sent to your email")
+                .build());
     }
 
 
     @PostMapping("/reset-password/validate")
     @Operation(summary = "Validate OTP", description = "Validates the OTP for password reset")
-    public ResponseEntity<String> validateOtp(@RequestBody ForgetPassword request) {
+    public ResponseEntity<ApiResponse<Void>> validateOtp(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -120,13 +127,16 @@ public class AuthController {
         String inputHash = String.valueOf(request.getToken().hashCode());
         if (!inputHash.equals(token.getOtpHash())) throw new IllegalArgumentException("Invalid OTP");
 
-        return ResponseEntity.ok("OTP is valid");
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message("OTP is valid")
+                .build());
     }
 
 
     @PostMapping("/reset-password/reset")
     @Operation(summary = "Reset password", description = "Resets password using a valid OTP")
-    public ResponseEntity<String> resetPassword(@RequestBody ForgetPassword request) {
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody ForgetPassword request) {
         User user = userRepository.findByUsernameIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -146,6 +156,9 @@ public class AuthController {
         token.setExpiryDate(new Date(System.currentTimeMillis() - 1000)); // expire token
         tokenRepository.save(token);
 
-        return ResponseEntity.ok("Password reset successfully");
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message("Password reset successfully")
+                .build());
     }
 }

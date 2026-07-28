@@ -73,6 +73,7 @@ public class VideoServiceImpl implements VideoService {
 
         return VideosResponseDto.builder()
                 .success(true)
+                .message("Videos retrieved successfully")
                 .data(
                         VideosResponseDto.Data.builder()
                                 .matchId(matchId)

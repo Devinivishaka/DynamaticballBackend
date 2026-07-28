@@ -84,6 +84,7 @@ public class UserService {
         if (userDto.getLastName() != null) user.setLastName(userDto.getLastName());
         if (userDto.getUsername() != null) user.setUsername(userDto.getUsername());
         if (userDto.getPassword() != null) user.setPassword(userDto.getPassword());
+        if (userDto.getRole() != null) user.setRole(userDto.getRole());
 
         return userRepository.save(user);
     }
@@ -108,6 +109,7 @@ public class UserService {
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
+        response.put("message", "Users retrieved successfully");
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("users", usersPage.getContent().stream().map(this::convertToUserResponse).toList());
@@ -126,7 +128,12 @@ public class UserService {
     public Map<String, Object> getUserByUserId(String userId) {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
-        return convertToUserResponse(user);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("message", "User retrieved successfully");
+        response.put("data", convertToUserResponse(user));
+        return response;
     }
 
     private Map<String, Object> convertToUserResponse(User user) {

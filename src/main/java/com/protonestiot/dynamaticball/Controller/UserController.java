@@ -1,5 +1,6 @@
 package com.protonestiot.dynamaticball.Controller;
 
+import com.protonestiot.dynamaticball.Dto.ApiResponse;
 import com.protonestiot.dynamaticball.Dto.RefereeResponseDto;
 import com.protonestiot.dynamaticball.Dto.UserDto;
 import com.protonestiot.dynamaticball.Entity.User;
@@ -37,15 +38,25 @@ public class UserController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping
     @Operation(summary = "Add user", description = "Creates a new user")
-    public ResponseEntity<User> addUser(@RequestBody @Valid UserDto userDto) {
-        return ResponseEntity.ok(userService.addUser(userDto));
+    public ResponseEntity<ApiResponse<User>> addUser(@RequestBody @Valid UserDto userDto) {
+        User user = userService.addUser(userDto);
+        return ResponseEntity.ok(ApiResponse.<User>builder()
+                .success(true)
+                .message("User created successfully")
+                .data(user)
+                .build());
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/referees")
     @Operation(summary = "List referees", description = "Retrieves all referees")
-    public ResponseEntity<List<RefereeResponseDto>> getAllReferees() {
-        return ResponseEntity.ok(userService.getAllRefereesDto());
+    public ResponseEntity<ApiResponse<List<RefereeResponseDto>>> getAllReferees() {
+        List<RefereeResponseDto> referees = userService.getAllRefereesDto();
+        return ResponseEntity.ok(ApiResponse.<List<RefereeResponseDto>>builder()
+                .success(true)
+                .message("Referees retrieved successfully")
+                .data(referees)
+                .build());
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
@@ -58,26 +69,38 @@ public class UserController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PutMapping("/referees/{userId}")
     @Operation(summary = "Update referee", description = "Updates referee data by userId")
-    public ResponseEntity<User> updateReferee(@PathVariable String userId, @RequestBody @Valid UserDto userDto) {
-        return ResponseEntity.ok(userService.updateRefereeByUserId(userId, userDto));
+    public ResponseEntity<ApiResponse<User>> updateReferee(@PathVariable String userId, @RequestBody @Valid UserDto userDto) {
+        User user = userService.updateRefereeByUserId(userId, userDto);
+        return ResponseEntity.ok(ApiResponse.<User>builder()
+                .success(true)
+                .message("Referee updated successfully")
+                .data(user)
+                .build());
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @DeleteMapping("/referees/{userId}")
     @Operation(summary = "Delete referee", description = "Deletes referee by userId")
-    public ResponseEntity<String> deleteReferee(@PathVariable String userId) {
+    public ResponseEntity<ApiResponse<Void>> deleteReferee(@PathVariable String userId) {
         userService.deleteRefereeByUserId(userId);
-        return ResponseEntity.ok("Referee deleted successfully");
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message("Referee deleted successfully")
+                .build());
     }
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @PostMapping("/{userId}/upload-profile-image")
     @Operation(summary = "Upload profile image", description = "Uploads profile image to Azure Blob Storage and returns blob name")
-    public ResponseEntity<String> uploadProfileImage(
+    public ResponseEntity<ApiResponse<String>> uploadProfileImage(
             @PathVariable String userId,
             @RequestParam("file") MultipartFile file) {
         String blobName = userService.uploadProfileImage(userId, file);
-        return ResponseEntity.ok(blobName); // Return blob name to client
+        return ResponseEntity.ok(ApiResponse.<String>builder()
+                .success(true)
+                .message("Profile image uploaded successfully")
+                .data(blobName)
+                .build());
     }
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
@@ -93,8 +116,11 @@ public class UserController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @DeleteMapping("/{userId}/delete-profile-image")
     @Operation(summary = "Delete profile image", description = "Deletes profile image for given userId")
-    public ResponseEntity<String> deleteProfileImage(@PathVariable String userId) {
+    public ResponseEntity<ApiResponse<Void>> deleteProfileImage(@PathVariable String userId) {
         userService.deleteProfileImage(userId);
-        return ResponseEntity.ok("Profile image deleted successfully");
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message("Profile image deleted successfully")
+                .build());
     }
 }

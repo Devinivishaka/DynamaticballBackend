@@ -511,6 +511,7 @@ public class MatchServiceImpl implements MatchService {
 
         return GenericMatchSummaryResponse.builder()
                 .success(true)
+                .message("Match summary retrieved successfully")
                 .data(summary)
                 .build();
     }
@@ -565,6 +566,7 @@ public class MatchServiceImpl implements MatchService {
 
         return GenericMatchTimelineResponse.builder()
                 .success(true)
+                .message("Match timeline retrieved successfully")
                 .data(timeline)
                 .build();
     }
@@ -620,6 +622,7 @@ public class MatchServiceImpl implements MatchService {
 
         return GenericPlayerStatsResponse.builder()
                 .success(true)
+                .message("Player statistics retrieved successfully")
                 .data(statsResponse)
                 .build();
     }
@@ -806,7 +809,7 @@ public class MatchServiceImpl implements MatchService {
 
         return MatchStatsResponseDto.builder()
                 .success(true)
-                .message("OK")
+                .message("Match stats retrieved successfully")
                 .data(
                         MatchStatsResponseDto.Data.builder()
                                 .matchId(matchId)
