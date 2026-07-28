@@ -1,8 +1,8 @@
 package com.protonestiot.dynamaticball.Dto;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -12,4 +12,5 @@ public class MatchActionRequestDto {
     private String matchId; // matchCode
     private String gameTime;
     private String timestamp;
+    private List<PlayerStatDto> playerStats;
 }

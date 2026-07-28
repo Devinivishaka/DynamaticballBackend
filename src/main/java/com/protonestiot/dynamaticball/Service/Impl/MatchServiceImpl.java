@@ -186,6 +186,23 @@ public class MatchServiceImpl implements MatchService {
                     long count = matchRepository.countByGameIdIsNotNull() + 1;
                     match.setGameId(String.format("G_%03d", count));
                 }
+                
+                if (dto.getPlayerStats() != null && !dto.getPlayerStats().isEmpty()) {
+                    for (PlayerStatDto statDto : dto.getPlayerStats()) {
+                        Player player = match.getGameSetup().getTeams().stream()
+                                .flatMap(team -> team.getPlayers().stream())
+                                .filter(p -> p.getPlayerCode().equals(statDto.getPlayerId()))
+                                .findFirst()
+                                .orElse(null);
+                        
+                        if (player != null) {
+                            if (statDto.getMaxSpeed() != null) player.setMaxSpeed(statDto.getMaxSpeed());
+                            if (statDto.getPenaltyTime() != null) player.setPenaltyTime(statDto.getPenaltyTime());
+                            if (statDto.getBallPossessingTime() != null) player.setBallPossessingTime(statDto.getBallPossessingTime());
+                            if (statDto.getBallControlInitiations() != null) player.setBallControlInitiations(statDto.getBallControlInitiations());
+                        }
+                    }
+                }
             }
             default -> throw new RuntimeException("Unknown action: " + action);
         }

@@ -36,6 +36,13 @@ public class Player {
     @Column(name = "penalty_time")
     private String penaltyTime; // format: "0:00" or seconds as string
 
+    @Column(name = "max_speed")
+    private Double maxSpeed;
 
+    @Column(name = "ball_possessing_time")
+    private String ballPossessingTime;
+
+    @Column(name = "ball_control_initiations")
+    private Integer ballControlInitiations;
 
 }
