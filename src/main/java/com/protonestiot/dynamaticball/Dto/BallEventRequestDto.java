@@ -12,7 +12,6 @@ public class BallEventRequestDto {
     private String matchId;
     private String eventType;
     private String playerId;
-    @JsonProperty("timestamp")
-    @JsonAlias("gameTime")
+    private String gameTime;
     private String timestamp;
 }

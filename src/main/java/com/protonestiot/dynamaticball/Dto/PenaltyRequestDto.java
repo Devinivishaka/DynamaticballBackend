@@ -14,7 +14,6 @@ public class PenaltyRequestDto {
     private String eventType;
     private String playerId;
     private String penaltyTime;
-    @JsonProperty("timestamp")
-    @JsonAlias("gameTime")
+    private String gameTime;
     private String timestamp;
 }

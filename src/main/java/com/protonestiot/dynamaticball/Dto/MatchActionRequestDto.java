@@ -10,7 +10,6 @@ import lombok.*;
 @AllArgsConstructor
 public class MatchActionRequestDto {
     private String matchId; // matchCode
-    @JsonProperty("timestamp")
-    @JsonAlias("gameTime")
+    private String gameTime;
     private String timestamp;
 }

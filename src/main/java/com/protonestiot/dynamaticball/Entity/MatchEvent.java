@@ -29,5 +29,6 @@ public class MatchEvent {
 
     private String playerCode;
     private String teamKey;
+    private String gameTime;
     private LocalDateTime timestamp;
 }

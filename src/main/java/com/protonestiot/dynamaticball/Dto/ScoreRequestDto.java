@@ -12,8 +12,7 @@ public class ScoreRequestDto {
     private String matchId;
     private String teamId;
     private int score; // points to add
-    @JsonProperty("timestamp")
-    @JsonAlias("gameTime")
+    private String gameTime;
     private String timestamp;
     private String playerId;
 }

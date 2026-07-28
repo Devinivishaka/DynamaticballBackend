@@ -104,7 +104,7 @@ public class MatchServiceImpl implements MatchService {
         long count = matchRepository.count() + 1;
         String matchCode = String.format("M_%03d", count);
 
-        LocalDateTime start = parseTimestamp(dto.getStartTime());
+        LocalDateTime start = parseTimestamp(dto.getTimestamp() != null ? dto.getTimestamp() : dto.getStartTime());
 
         Long teamAId = null;
         Long teamBId = null;
@@ -131,6 +131,7 @@ public class MatchServiceImpl implements MatchService {
                 .eventType("match_start")
                 .description("Match started")
                 .timestamp(start)
+                .gameTime(dto.getTimestamp() != null ? dto.getStartTime() : "00:00:00")
                 .build();
         matchEventRepository.save(ev);
 
@@ -196,6 +197,7 @@ public class MatchServiceImpl implements MatchService {
                 .eventType(action.toLowerCase())
                 .description(action.substring(0, 1).toUpperCase() + action.substring(1))
                 .timestamp(ts)
+                .gameTime(dto.getGameTime())
                 .build();
         matchEventRepository.save(ev);
 
@@ -244,6 +246,7 @@ public class MatchServiceImpl implements MatchService {
                 .teamKey(String.valueOf(team.getId()))
                 .description("Score +" + dto.getScore() + " by player " + player.getPlayerCode())
                 .timestamp(ts)
+                .gameTime(dto.getGameTime())
                 .build();
         matchEventRepository.save(ev);
 
@@ -283,6 +286,7 @@ public class MatchServiceImpl implements MatchService {
                 .playerCode(dto.getPlayerId())
                 .description(dto.getEventType() + (dto.getPlayerId() != null ? " by " + dto.getPlayerId() : ""))
                 .timestamp(ts)
+                .gameTime(dto.getGameTime())
                 .build();
         matchEventRepository.save(ev);
 
@@ -319,8 +323,9 @@ public class MatchServiceImpl implements MatchService {
                 .playerCode(player.getPlayerCode())
                 .description("Player " + player.getPlayerCode() +
                         (dto.getPenaltyTime() != null ? " received a " + dto.getPenaltyTime() + " s penalty" : " received a penalty") +
-                        (dto.getTimestamp() != null ? " during game time " + dto.getTimestamp() : ""))
+                        (dto.getGameTime() != null ? " during game time " + dto.getGameTime() : ""))
                 .timestamp(ts)
+                .gameTime(dto.getGameTime())
                 .build();
 
         matchEventRepository.save(ev);
@@ -363,6 +368,7 @@ public class MatchServiceImpl implements MatchService {
                 .eventType("halftime")
                 .description("Halftime")
                 .timestamp(ts)
+                .gameTime(dto.getGameTime())
                 .build();
         matchEventRepository.save(ev);
 
@@ -493,8 +499,8 @@ public class MatchServiceImpl implements MatchService {
         List<MatchTimelineEventDto> events = match.getEvents().stream()
                 .sorted((e1, e2) -> e1.getTimestamp().compareTo(e2.getTimestamp()))
                 .map(e -> {
-                    String time = "00:00";
-                    if (matchStart != null && e.getTimestamp() != null) {
+                    String time = e.getGameTime() != null ? e.getGameTime() : "00:00";
+                    if (e.getGameTime() == null && matchStart != null && e.getTimestamp() != null) {
                         Duration dur = Duration.between(matchStart, e.getTimestamp());
                         long minutes = dur.toMinutes();
                         long seconds = dur.minusMinutes(minutes).getSeconds();

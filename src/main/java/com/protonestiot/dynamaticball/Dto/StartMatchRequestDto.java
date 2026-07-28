@@ -9,4 +9,5 @@ import lombok.*;
 public class StartMatchRequestDto {
     private String gameSetupId;
     private String startTime;
+    private String timestamp;
 }
