@@ -509,26 +509,38 @@ public class MatchServiceImpl implements MatchService {
                 .map(e -> {
                     String time = calculateFallbackGameTime(match, e);
 
+                    Long eventTeamId = null;
+                    if (e.getTeamKey() != null) {
+                        eventTeamId = match.getGameSetup().getTeams().stream()
+                                .filter(t -> e.getTeamKey().equals(t.getTeamKey()))
+                                .findFirst()
+                                .map(com.protonestiot.dynamaticball.Entity.Team::getId)
+                                .orElse(null);
+                    }
+                    Long eventPlayerRecordId = null;
+                    if (e.getPlayerCode() != null) {
+                        eventPlayerRecordId = match.getGameSetup().getTeams().stream()
+                                .flatMap(t -> t.getPlayers().stream())
+                                .filter(p -> e.getPlayerCode().equals(p.getPlayerCode()))
+                                .findFirst()
+                                .map(com.protonestiot.dynamaticball.Entity.Player::getId)
+                                .orElse(null);
+                    }
+
                     return MatchTimelineEventDto.builder()
                             .timestamp(e.getTimestamp() != null ? e.getTimestamp().toString() : null)
-                            .gameTime(time)
+                            .time(time)
                             .eventType(e.getEventType())
                             .description(e.getDescription())
                             .playerId(e.getPlayerCode())
-                            .teamId(e.getTeamKey())
+                            .playerRecordId(eventPlayerRecordId)
+                            .teamId(eventTeamId)
                             .build();
                 })
                 .toList(); // Java 16+, else use Collectors.toList()
 
-        MatchEvent lastEvent = match.getEvents().stream()
-                .max(java.util.Comparator.comparing(MatchEvent::getTimestamp))
-                .orElse(null);
-        String latestGameTime = calculateFallbackGameTime(match, lastEvent);
-        String latestTimestamp = lastEvent != null && lastEvent.getTimestamp() != null ? lastEvent.getTimestamp().toString() : null;
-
         MatchTimelineDto timeline = MatchTimelineDto.builder()
-                .gameTime(latestGameTime)
-                .timestamp(latestTimestamp)
+                .gameId(match.getGameId())
                 .events(events)
                 .build();
 

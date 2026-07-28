@@ -9,9 +9,10 @@ import lombok.Setter;
 @Builder
 public class MatchTimelineEventDto {
     private String timestamp;
-    private String gameTime;
+    private String time;
     private String eventType;
     private String description;
     private String playerId;
-    private String teamId;
+    private Long playerRecordId;
+    private Long teamId;
 }
