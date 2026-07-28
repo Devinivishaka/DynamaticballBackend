@@ -20,7 +20,7 @@ public class GameHistoryService {
     private final MatchRepository matchRepository;
     private final TeamRepository teamRepository;
 
-    public GameHistoryResponseDto getGameHistory(int page, int limit, String dateFrom, String dateTo, Long teamId, String gameId) {
+    public GameHistoryResponseDto getGameHistory(int page, int limit, String date, String teamName, String gameId) {
 
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "endTime"));
 
@@ -29,25 +29,24 @@ public class GameHistoryService {
 
         specs.add((root, query, cb) -> cb.equal(root.get("status"), "ENDED"));
 
-        if (dateFrom != null) {
-            LocalDate from = LocalDate.parse(dateFrom);
-            specs.add((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("endTime"), from.atStartOfDay()));
+        if (date != null && !date.isBlank()) {
+            specs.add((root, query, cb) -> cb.like(root.get("endTime").as(String.class), "%" + date + "%"));
         }
 
-        if (dateTo != null) {
-            LocalDate to = LocalDate.parse(dateTo);
-            specs.add((root, query, cb) -> cb.lessThanOrEqualTo(root.get("endTime"), to.plusDays(1).atStartOfDay()));
+        if (teamName != null && !teamName.isBlank()) {
+            List<Long> matchingTeamIds = teamRepository.findByNameContainingIgnoreCase(teamName).stream().map(com.protonestiot.dynamaticball.Entity.Team::getId).toList();
+            if (matchingTeamIds.isEmpty()) {
+                specs.add((root, query, cb) -> cb.disjunction());
+            } else {
+                specs.add((root, query, cb) -> cb.or(
+                        root.get("teamAId").in(matchingTeamIds),
+                        root.get("teamBId").in(matchingTeamIds)
+                ));
+            }
         }
 
-        if (teamId != null) {
-            specs.add((root, query, cb) -> cb.or(
-                    cb.equal(root.get("teamAId"), teamId),
-                    cb.equal(root.get("teamBId"), teamId)
-            ));
-        }
-
-        if (gameId != null) {
-            specs.add((root, query, cb) -> cb.equal(root.get("gameId"), gameId));
+        if (gameId != null && !gameId.isBlank()) {
+            specs.add((root, query, cb) -> cb.like(cb.lower(root.get("gameId")), "%" + gameId.toLowerCase() + "%"));
         }
 
 
@@ -58,14 +57,14 @@ public class GameHistoryService {
         List<GameHistoryItemDto> gameList = matchPage.getContent().stream().map(match -> {
             TeamDto teamA = TeamDto.builder()
                     .name(teamRepository.findById(match.getTeamAId())
-                            .map(t -> t.getTeamKey())
+                            .map(t -> t.getName() != null ? t.getName() : t.getTeamKey())
                             .orElse("Unknown"))
                     .score(match.getScoreTeamA())
                     .build();
 
             TeamDto teamB = TeamDto.builder()
                     .name(teamRepository.findById(match.getTeamBId())
-                            .map(t -> t.getTeamKey())
+                            .map(t -> t.getName() != null ? t.getName() : t.getTeamKey())
                             .orElse("Unknown"))
                     .score(match.getScoreTeamB())
                     .build();

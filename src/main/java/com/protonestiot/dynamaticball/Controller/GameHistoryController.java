@@ -26,12 +26,11 @@ public class GameHistoryController {
     public ResponseEntity<GameHistoryResponseDto> getGameHistory(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
-            @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo,
-            @RequestParam(required = false) Long teamId,
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) String teamName,
             @RequestParam(required = false) String gameId
     ) {
-        return ResponseEntity.ok(gameHistoryService.getGameHistory(page, limit, dateFrom, dateTo, teamId, gameId));
+        return ResponseEntity.ok(gameHistoryService.getGameHistory(page, limit, date, teamName, gameId));
     }
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
