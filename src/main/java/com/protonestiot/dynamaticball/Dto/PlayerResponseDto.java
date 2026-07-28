@@ -18,4 +18,5 @@ public class PlayerResponseDto {
     private String leftWristband;
     private String camera;
     private Long teamId;
+    private Long playerRecordId;
 }

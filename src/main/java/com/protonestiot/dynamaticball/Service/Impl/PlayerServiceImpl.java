@@ -81,6 +81,7 @@ public class PlayerServiceImpl implements PlayerService {
                 .leftWristband(saved.getLeftWristband())
                 .camera(saved.getCamera())
                 .teamId(saved.getTeam().getId())
+                .playerRecordId(saved.getId())
                 .build();
     }
 
@@ -170,6 +171,7 @@ public class PlayerServiceImpl implements PlayerService {
                 .leftWristband(updated.getLeftWristband())
                 .camera(updated.getCamera())
                 .teamId(updated.getTeam().getId())
+                .playerRecordId(updated.getId())
                 .build();
     }
 
