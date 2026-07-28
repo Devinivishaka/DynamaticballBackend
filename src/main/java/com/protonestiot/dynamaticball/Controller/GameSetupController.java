@@ -76,6 +76,32 @@ public class GameSetupController {
     }
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
+    @PostMapping("/{gameSetupId}/players")
+    @Operation(summary = "Add player", description = "Adds a new player to a specific game setup")
+    public ResponseEntity<?> addPlayerToGameSetup(@PathVariable String gameSetupId,
+                                                  @jakarta.validation.Valid @RequestBody PlayerRequestDto requestDto) {
+        try {
+            return ResponseEntity.ok(playerService.addPlayer(gameSetupId, requestDto));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "status", 400,
+                    "error", "Player Addition Error",
+                    "message", e.getMessage(),
+                    "path", "/api/v1/game-setup/" + gameSetupId + "/players"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "status", 500,
+                    "error", "Internal Server Error",
+                    "message", e.getMessage(),
+                    "path", "/api/v1/game-setup/" + gameSetupId + "/players"
+            ));
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @PutMapping("/{gameSetupId}/players/{id}")
     @Operation(summary = "Update player", description = "Updates a player in a specific game setup")
     public ResponseEntity<?> updatePlayerInGameSetup(@PathVariable String gameSetupId,

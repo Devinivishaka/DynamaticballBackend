@@ -21,10 +21,10 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
-    public com.protonestiot.dynamaticball.Dto.PlayerResponseDto addPlayer(String gameSetupId, String teamKey, PlayerRequestDto dto) {
+    public com.protonestiot.dynamaticball.Dto.PlayerResponseDto addPlayer(String gameSetupId, PlayerRequestDto dto) {
         if (dto == null) throw new RuntimeException("Player data cannot be null.");
         if (gameSetupId == null || gameSetupId.trim().isEmpty()) throw new RuntimeException("Game setup ID cannot be null.");
-        if (teamKey == null || teamKey.trim().isEmpty()) throw new RuntimeException("Team key cannot be null.");
+        if (dto.getTeamId() == null) throw new RuntimeException("Team ID cannot be null.");
 
         // Validate required fields
         if (dto.getPlayerId() == null || dto.getPlayerId().trim().isEmpty())
@@ -38,8 +38,12 @@ public class PlayerServiceImpl implements PlayerService {
         if (dto.getCamera() == null || dto.getCamera().trim().isEmpty())
             throw new RuntimeException("Camera value cannot be null or empty.");
 
-        Team team = teamRepository.findByGameSetup_SetupCodeAndTeamKey(gameSetupId, teamKey)
-                .orElseThrow(() -> new RuntimeException("Team not found for game setup: " + gameSetupId + " and team: " + teamKey));
+        Team team = teamRepository.findById(dto.getTeamId())
+                .orElseThrow(() -> new RuntimeException("Team not found for ID: " + dto.getTeamId()));
+
+        if (!team.getGameSetup().getSetupCode().equals(gameSetupId)) {
+            throw new RuntimeException("Team does not belong to game setup: " + gameSetupId);
+        }
 
 
         Long dbGameSetupId = team.getGameSetup().getId();
