@@ -10,5 +10,7 @@ import java.util.List;
 @Setter
 @Builder
 public class MatchTimelineDto {
+    private String gameTime;
+    private String timestamp;
     private List<MatchTimelineEventDto> events;
 }

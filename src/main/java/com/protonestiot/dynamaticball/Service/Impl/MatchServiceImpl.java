@@ -406,6 +406,19 @@ public class MatchServiceImpl implements MatchService {
 
 
 
+    private String calculateFallbackGameTime(Match match, MatchEvent event) {
+        if (event == null) return "00:00:00";
+        if (event.getGameTime() != null) return event.getGameTime();
+        if (match.getStartTime() != null && event.getTimestamp() != null) {
+            Duration dur = Duration.between(match.getStartTime(), event.getTimestamp());
+            long hours = dur.toHours();
+            long minutes = dur.toMinutes() % 60;
+            long seconds = dur.getSeconds() % 60;
+            return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+        }
+        return "00:00:00";
+    }
+
     @Override
     @Transactional(readOnly = true)
     public GenericMatchSummaryResponse getMatchSummary(String gameId) {
@@ -457,12 +470,13 @@ public class MatchServiceImpl implements MatchService {
                 .build();
 
 
-        String duration = "00:00";
+        String duration = "00:00:00";
         if (match.getStartTime() != null && match.getEndTime() != null) {
             Duration dur = Duration.between(match.getStartTime(), match.getEndTime());
-            long minutes = dur.toMinutes();
-            long seconds = dur.minusMinutes(minutes).getSeconds();
-            duration = String.format("%02d:%02d", minutes, seconds);
+            long hours = dur.toHours();
+            long minutes = dur.toMinutes() % 60;
+            long seconds = dur.getSeconds() % 60;
+            duration = String.format("%02d:%02d:%02d", hours, minutes, seconds);
         }
 
 
@@ -471,12 +485,20 @@ public class MatchServiceImpl implements MatchService {
         else if (match.getScoreTeamB() > match.getScoreTeamA()) winner = "teamB";
         else winner = "draw";
 
+        MatchEvent lastEvent = match.getEvents().stream()
+                .max(java.util.Comparator.comparing(MatchEvent::getTimestamp))
+                .orElse(null);
+        String latestGameTime = calculateFallbackGameTime(match, lastEvent);
+        String latestTimestamp = lastEvent != null && lastEvent.getTimestamp() != null ? lastEvent.getTimestamp().toString() : null;
+
         MatchSummaryDto summary = MatchSummaryDto.builder()
                 .matchId(match.getMatchCode())
                 .gameId(match.getGameId())
                 .startTime(match.getStartTime())
                 .endTime(match.getEndTime())
                 .duration(duration)
+                .gameTime(latestGameTime)
+                .timestamp(latestTimestamp)
                 .teamA(teamADto)
                 .teamB(teamBDto)
                 .winner(winner)
@@ -499,17 +521,11 @@ public class MatchServiceImpl implements MatchService {
         List<MatchTimelineEventDto> events = match.getEvents().stream()
                 .sorted((e1, e2) -> e1.getTimestamp().compareTo(e2.getTimestamp()))
                 .map(e -> {
-                    String time = e.getGameTime() != null ? e.getGameTime() : "00:00";
-                    if (e.getGameTime() == null && matchStart != null && e.getTimestamp() != null) {
-                        Duration dur = Duration.between(matchStart, e.getTimestamp());
-                        long minutes = dur.toMinutes();
-                        long seconds = dur.minusMinutes(minutes).getSeconds();
-                        time = String.format("%02d:%02d", minutes, seconds);
-                    }
+                    String time = calculateFallbackGameTime(match, e);
 
                     return MatchTimelineEventDto.builder()
                             .timestamp(e.getTimestamp() != null ? e.getTimestamp().toString() : null)
-                            .time(time)
+                            .gameTime(time)
                             .eventType(e.getEventType())
                             .description(e.getDescription())
                             .playerId(e.getPlayerCode())
@@ -518,7 +534,15 @@ public class MatchServiceImpl implements MatchService {
                 })
                 .toList(); // Java 16+, else use Collectors.toList()
 
+        MatchEvent lastEvent = match.getEvents().stream()
+                .max(java.util.Comparator.comparing(MatchEvent::getTimestamp))
+                .orElse(null);
+        String latestGameTime = calculateFallbackGameTime(match, lastEvent);
+        String latestTimestamp = lastEvent != null && lastEvent.getTimestamp() != null ? lastEvent.getTimestamp().toString() : null;
+
         MatchTimelineDto timeline = MatchTimelineDto.builder()
+                .gameTime(latestGameTime)
+                .timestamp(latestTimestamp)
                 .events(events)
                 .build();
 
@@ -568,7 +592,15 @@ public class MatchServiceImpl implements MatchService {
                         .build())
                 .toList();
 
+        MatchEvent lastEvent = match.getEvents().stream()
+                .max(java.util.Comparator.comparing(MatchEvent::getTimestamp))
+                .orElse(null);
+        String latestGameTime = calculateFallbackGameTime(match, lastEvent);
+        String latestTimestamp = lastEvent != null && lastEvent.getTimestamp() != null ? lastEvent.getTimestamp().toString() : null;
+
         PlayerStatsResponseDto statsResponse = PlayerStatsResponseDto.builder()
+                .gameTime(latestGameTime)
+                .timestamp(latestTimestamp)
                 .teamA(teamAStats)
                 .teamB(teamBStats)
                 .build();

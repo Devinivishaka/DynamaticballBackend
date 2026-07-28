@@ -14,6 +14,8 @@ public class MatchSummaryDto {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String duration;
+    private String gameTime;
+    private String timestamp;
     private TeamSummaryDto teamA;
     private TeamSummaryDto teamB;
     private String winner;
