@@ -18,6 +18,8 @@ public class MatchSummaryDto {
     private String timestamp;
     private TeamSummaryDto teamA;
     private TeamSummaryDto teamB;
+    private String teamAName;
+    private String teamBName;
     private String winner;
 }
 

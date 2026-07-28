@@ -484,9 +484,9 @@ public class MatchServiceImpl implements MatchService {
 
 
         String winner;
-        if (match.getScoreTeamA() > match.getScoreTeamB()) winner = "teamA";
-        else if (match.getScoreTeamB() > match.getScoreTeamA()) winner = "teamB";
-        else winner = "draw";
+        if (match.getScoreTeamA() > match.getScoreTeamB()) winner = teamA.getName() != null ? teamA.getName() : "Team A";
+        else if (match.getScoreTeamB() > match.getScoreTeamA()) winner = teamB.getName() != null ? teamB.getName() : "Team B";
+        else winner = "Draw";
 
         MatchEvent lastEvent = match.getEvents().stream()
                 .max(java.util.Comparator.comparing(MatchEvent::getTimestamp))
@@ -504,6 +504,8 @@ public class MatchServiceImpl implements MatchService {
                 .timestamp(latestTimestamp)
                 .teamA(teamADto)
                 .teamB(teamBDto)
+                .teamAName(teamA.getName())
+                .teamBName(teamB.getName())
                 .winner(winner)
                 .build();
 
