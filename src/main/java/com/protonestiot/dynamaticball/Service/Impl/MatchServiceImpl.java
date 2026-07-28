@@ -434,18 +434,11 @@ public class MatchServiceImpl implements MatchService {
                 .orElseThrow(() -> new RuntimeException("TeamA not found"));
 
         TeamSummaryDto teamADto = TeamSummaryDto.builder()
+                .teamId(teamA.getId())
                 .name(teamA.getName())
                 .color(teamA.getColor())
                 .score(match.getScoreTeamA())
-                .players(teamA.getPlayers().stream()
-                        .map(p -> PlayerSummaryDto.builder()
-                                .playerId(p.getPlayerCode())
-                                .maxSpeed(0)
-                                .penaltyTime("0:00")
-                                .ballPossessingTime("0:00")
-                                .ballControlInitiations(0)
-                                .build())
-                        .collect(Collectors.toList()))
+                .playerCount(teamA.getPlayers() != null ? teamA.getPlayers().size() : 0)
                 .build();
 
 
@@ -455,18 +448,11 @@ public class MatchServiceImpl implements MatchService {
                 .orElseThrow(() -> new RuntimeException("TeamB not found"));
 
         TeamSummaryDto teamBDto = TeamSummaryDto.builder()
+                .teamId(teamB.getId())
                 .name(teamB.getName())
                 .color(teamB.getColor())
                 .score(match.getScoreTeamB())
-                .players(teamB.getPlayers().stream()
-                        .map(p -> PlayerSummaryDto.builder()
-                                .playerId(p.getPlayerCode())
-                                .maxSpeed(0)
-                                .penaltyTime("0:00")
-                                .ballPossessingTime("0:00")
-                                .ballControlInitiations(0)
-                                .build())
-                        .collect(Collectors.toList()))
+                .playerCount(teamB.getPlayers() != null ? teamB.getPlayers().size() : 0)
                 .build();
 
 

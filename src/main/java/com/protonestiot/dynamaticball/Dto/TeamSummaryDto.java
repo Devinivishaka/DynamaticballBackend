@@ -9,10 +9,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TeamSummaryDto {
+    private Long teamId;
     private String name;
     private String color;
     private int score;
-    private List<PlayerSummaryDto> players;
+    private int playerCount;
 }
 
 
