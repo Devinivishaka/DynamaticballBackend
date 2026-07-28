@@ -583,11 +583,12 @@ public class MatchServiceImpl implements MatchService {
 
         List<PlayerStatsDto> teamAStats = teamA.getPlayers().stream()
                 .map(p -> PlayerStatsDto.builder()
+                        .playerRecordId(p.getId())
                         .playerId(p.getPlayerCode())
-                        .maxSpeed("0") // placeholder if not available
-                        .penaltyTime("0:00")
-                        .ballPossessingTime("0:00")
-                        .ballControlInitiations("0")
+                        .maxSpeed(p.getMaxSpeed() != null ? p.getMaxSpeed() : 0.0)
+                        .penaltyTime(p.getPenaltyTime() != null ? p.getPenaltyTime() : "00:00:00")
+                        .ballPossessingTime(p.getBallPossessingTime() != null ? p.getBallPossessingTime() : "00:00:00")
+                        .ballControlInitiations(p.getBallControlInitiations() != null ? p.getBallControlInitiations() : 0)
                         .build())
                 .toList();
 
@@ -599,23 +600,18 @@ public class MatchServiceImpl implements MatchService {
 
         List<PlayerStatsDto> teamBStats = teamB.getPlayers().stream()
                 .map(p -> PlayerStatsDto.builder()
+                        .playerRecordId(p.getId())
                         .playerId(p.getPlayerCode())
-                        .maxSpeed("0")
-                        .penaltyTime("0:00")
-                        .ballPossessingTime("0:00")
-                        .ballControlInitiations("0")
+                        .maxSpeed(p.getMaxSpeed() != null ? p.getMaxSpeed() : 0.0)
+                        .penaltyTime(p.getPenaltyTime() != null ? p.getPenaltyTime() : "00:00:00")
+                        .ballPossessingTime(p.getBallPossessingTime() != null ? p.getBallPossessingTime() : "00:00:00")
+                        .ballControlInitiations(p.getBallControlInitiations() != null ? p.getBallControlInitiations() : 0)
                         .build())
                 .toList();
 
-        MatchEvent lastEvent = match.getEvents().stream()
-                .max(java.util.Comparator.comparing(MatchEvent::getTimestamp))
-                .orElse(null);
-        String latestGameTime = calculateFallbackGameTime(match, lastEvent);
-        String latestTimestamp = lastEvent != null && lastEvent.getTimestamp() != null ? lastEvent.getTimestamp().toString() : null;
 
         PlayerStatsResponseDto statsResponse = PlayerStatsResponseDto.builder()
-                .gameTime(latestGameTime)
-                .timestamp(latestTimestamp)
+                .gameId(gameId)
                 .teamA(teamAStats)
                 .teamB(teamBStats)
                 .build();

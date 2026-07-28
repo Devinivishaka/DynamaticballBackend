@@ -8,9 +8,10 @@ import lombok.Setter;
 @Setter
 @Builder
 public class PlayerStatsDto {
+    private Long playerRecordId;
     private String playerId;
-    private String maxSpeed;             // string as per response
+    private Double maxSpeed;
     private String penaltyTime;
     private String ballPossessingTime;
-    private String ballControlInitiations;
+    private Integer ballControlInitiations;
 }

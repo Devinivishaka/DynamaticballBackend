@@ -11,8 +11,7 @@ import java.util.Map;
 @Setter
 @Builder
 public class PlayerStatsResponseDto {
-    private String gameTime;
-    private String timestamp;
+    private String gameId;
     private List<PlayerStatsDto> teamA;
     private List<PlayerStatsDto> teamB;
 }
