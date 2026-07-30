@@ -46,7 +46,7 @@ public class UserService {
             throw new IllegalArgumentException("Role is required");
         }
 
-        if (userDto.getRole() != Role.REFEREE && userDto.getRole() != Role.SUPER_ADMIN) {
+        if (userDto.getRole() != Role.REFEREE && userDto.getRole() != Role.SUPER_ADMIN && userDto.getRole() != Role.VIDEO_ADMIN) {
             throw new IllegalArgumentException("Invalid role");
         }
 

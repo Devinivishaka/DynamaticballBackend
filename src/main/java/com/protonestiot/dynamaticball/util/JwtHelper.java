@@ -55,6 +55,9 @@ public class JwtHelper {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", userDetails.getAuthorities().stream()
+                .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+                .toList());
         return doGenerateToken(claims, userDetails.getUsername());
     }
 

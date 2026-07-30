@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,9 +40,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = null;
         String username = null;
 
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("jwt".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+        }
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        if (token == null && authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
+        }
+
+        if (token != null) {
             try {
                 username = jwtHelper.getUsernameFromToken(token);
             } catch (IllegalArgumentException e) {
@@ -54,7 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 logger.error("Unexpected error parsing JWT token", e);
             }
         } else {
-            logger.trace("No JWT token found in Authorization header");
+            logger.trace("No JWT token found in request (cookie or header)");
         }
 
 

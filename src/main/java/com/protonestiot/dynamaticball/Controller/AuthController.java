@@ -13,6 +13,9 @@ import com.protonestiot.dynamaticball.Service.EmailService;
 import com.protonestiot.dynamaticball.util.JwtHelper;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -45,6 +48,9 @@ public class AuthController {
     @Autowired
     private EmailService emailService;
 
+    @Value("${jwt.expiration}")
+    private long jwtExpiration;
+
     private static final long OTP_EXPIRATION_MS = 15 * 60 * 1000; // 15 mins
 
     private String generateOtp() {
@@ -69,13 +75,31 @@ public class AuthController {
         String jwt = jwtUtil.generateToken(userDetails);
         List<String> roles = List.of(user.getRole().name());
 
-        return ResponseEntity.ok(new LoginResponse(jwt, roles));
+        ResponseCookie jwtCookie = ResponseCookie.from("jwt", jwt)
+                .httpOnly(true)
+                .secure(false) // Set to true in production if using HTTPS
+                .path("/")
+                .maxAge(jwtExpiration / 1000)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                .body(new LoginResponse(jwt, roles));
     }
 
     @GetMapping("/logout")
-    @Operation(summary = "Logout", description = "Client-side JWT token clear (no server state)")
+    @Operation(summary = "Logout", description = "Clears JWT token from HTTP-only cookie")
     public ResponseEntity<ApiResponse<Void>> logout() {
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
+        ResponseCookie jwtCookie = ResponseCookie.from("jwt", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                .body(ApiResponse.<Void>builder()
                 .success(true)
                 .message("Logout successful")
                 .build());
