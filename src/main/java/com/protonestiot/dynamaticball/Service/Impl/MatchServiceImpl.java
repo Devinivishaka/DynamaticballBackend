@@ -638,13 +638,38 @@ public class MatchServiceImpl implements MatchService {
             throw new RuntimeException("No teams found for gameSetup: " + gameSetup.getSetupCode());
         }
 
-        // The recording process is now handled by devices directly uploading segments 
-        // to the video streaming service. No server-side start signal is required.
-        return GenericResponseDto.builder()
-                .success(true)
-                .message("Recording started successfully. Devices should now upload segments.")
-                .id(dto.getGameSetupId())
-                .build();
+        List<MediaServiceClient.CameraAssignmentReq> cameras = new ArrayList<>();
+
+        for (Team team : teams) {
+            List<Player> players = team.getPlayers();
+            if (players != null && !players.isEmpty()) {
+                for (Player player : players) {
+                    if (player.getCamera() != null && !player.getCamera().isEmpty()) {
+                        MediaServiceClient.CameraAssignmentReq cameraReq = new MediaServiceClient.CameraAssignmentReq();
+                        cameraReq.setCameraId(player.getCamera());
+                        cameraReq.setPlayerId(player.getPlayerCode());
+                        cameraReq.setTeam(team.getTeamKey());
+                        cameras.add(cameraReq);
+                    }
+                }
+            }
+        }
+
+        MediaServiceClient.StartRequest startRequest = new MediaServiceClient.StartRequest();
+        startRequest.setMatchId(dto.getGameSetupId());
+        startRequest.setCameras(cameras);
+
+        try {
+            MediaServiceClient.StartResponse response = mediaServiceClient.startMatch(startRequest);
+
+            return GenericResponseDto.builder()
+                    .success(true)
+                    .message("Recording started successfully. Status: " + response.getStatus())
+                    .id(dto.getGameSetupId())
+                    .build();
+        } catch (MediaServiceClient.MediaServiceException e) {
+            throw new RuntimeException("Failed to start recording: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -657,9 +682,24 @@ public class MatchServiceImpl implements MatchService {
         GameSetup gameSetup = match.getGameSetup();
         String gameId = gameSetup.getSetupCode();
 
-        // The recording process is now handled by devices directly uploading segments 
-        // to the video streaming service. Devices will call /finalize independently.
-        System.out.println("Match " + gameId + " stopped. Devices should finalize their uploads.");
+        try {
+            MediaServiceClient.StopRequest stopRequest = new MediaServiceClient.StopRequest();
+            stopRequest.setMatchId(gameId);
+
+            MediaServiceClient.StopResponse response = mediaServiceClient.stopMatch(stopRequest);
+
+            GenericResponseDto.builder()
+                    .success(true)
+                    .message("Recording stopped successfully. Status: " + response.getStatus())
+                    .id(gameId)
+                    .build();
+        } catch (MediaServiceClient.MediaServiceException e) {
+            if (e.getStatus() == 404) {
+                System.err.println("MediaService returned 404. Recording was likely not active for game: " + gameId);
+            } else {
+                throw new RuntimeException("Failed to stop recording: " + e.getMessage(), e);
+            }
+        }
     }
 
     @Override
@@ -677,14 +717,30 @@ public class MatchServiceImpl implements MatchService {
                     .orElseThrow(() -> new RuntimeException("Game setup not found for gameSetupId: " + gameId));
         }
 
-        // Live streams are no longer supported via MediaMTX. 
-        // The new system processes recordings passively via segments.
-        return StreamsResponseDto.builder()
-                .success(true)
-                .message("Live streams are not available in the current recording system.")
-                .matchId(gameSetup.getSetupCode())
-                .streams(new ArrayList<>())
-                .build();
+        try {
+            MediaServiceClient.StreamsResponse streamsResponse = mediaServiceClient.getStreams(gameSetup.getSetupCode());
+
+            List<StreamsResponseDto.StreamItemDto> streamItems = streamsResponse.getStreams() != null
+                    ? streamsResponse.getStreams().stream()
+                    .map(item -> StreamsResponseDto.StreamItemDto.builder()
+                            .cameraId(item.getCameraId())
+                            .playerId(item.getPlayerId())
+                            .team(item.getTeam())
+                            .manifest(item.getManifest())
+                            .token(item.getToken())
+                            .build())
+                    .collect(Collectors.toList())
+                    : new ArrayList<>();
+
+            return StreamsResponseDto.builder()
+                    .success(true)
+                    .message("Streams retrieved successfully")
+                    .matchId(streamsResponse.getMatchId())
+                    .streams(streamItems)
+                    .build();
+        } catch (MediaServiceClient.MediaServiceException e) {
+            throw new RuntimeException("Failed to get streams: " + e.getMessage(), e);
+        }
     }
 
     @Override
