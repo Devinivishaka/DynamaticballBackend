@@ -96,10 +96,11 @@ public class UserController {
             @PathVariable String userId,
             @RequestParam("file") MultipartFile file) {
         String blobName = userService.uploadProfileImage(userId, file);
+        String fullImageUrl = userService.constructProfileImageUrl(blobName);
         return ResponseEntity.ok(ApiResponse.<String>builder()
                 .success(true)
                 .message("Profile image uploaded successfully")
-                .data(blobName)
+                .data(fullImageUrl)
                 .build());
     }
 

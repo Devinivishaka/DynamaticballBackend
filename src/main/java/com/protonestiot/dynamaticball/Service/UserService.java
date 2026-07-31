@@ -15,6 +15,7 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.persistence.EntityNotFoundException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
@@ -38,6 +39,20 @@ public class UserService {
 
     @Value("${azure.storage.endpoint}")
     private String endpoint;
+
+    @Value("${backend.base-url:http://localhost:8080}")
+    private String backendBaseUrl;
+
+    public String constructProfileImageUrl(String rawProfileImage) {
+        if (rawProfileImage == null || rawProfileImage.trim().isEmpty()) {
+            return null;
+        }
+        if (rawProfileImage.startsWith("http://") || rawProfileImage.startsWith("https://")) {
+            return rawProfileImage;
+        }
+        String baseUrl = backendBaseUrl.replaceAll("/+$", "");
+        return baseUrl + "/api/v1/users/profile-image/" + rawProfileImage;
+    }
 
 
     public User addUser(UserDto userDto) {
@@ -78,7 +93,7 @@ public class UserService {
 
     public User updateRefereeByUserId(String userId, UserDto userDto) {
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Referee not found with ID: " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("Referee not found with ID: " + userId));
 
         if (userDto.getFirstName() != null) user.setFirstName(userDto.getFirstName());
         if (userDto.getLastName() != null) user.setLastName(userDto.getLastName());
@@ -91,7 +106,7 @@ public class UserService {
 
     public void deleteRefereeByUserId(String userId) {
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Referee not found with ID: " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("Referee not found with ID: " + userId));
         userRepository.delete(user);
     }
 
@@ -127,7 +142,7 @@ public class UserService {
 
     public Map<String, Object> getUserByUserId(String userId) {
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
@@ -146,7 +161,7 @@ public class UserService {
         userMap.put("role", user.getRole());
         userMap.put("createdAt", user.getCreatedAt());
         userMap.put("lastLogin", user.getLastLogin());
-        userMap.put("profileImageUrl", user.getProfileImageUrl());
+        userMap.put("profileImageUrl", constructProfileImageUrl(user.getProfileImageUrl()));
         return userMap;
     }
 
@@ -216,6 +231,9 @@ public class UserService {
         String blobName = user.getProfileImageUrl();
         if (blobName == null || blobName.isEmpty()) {
             throw new IllegalArgumentException("No profile image found for this user");
+        }
+        if (blobName.contains("/profile-image/")) {
+            blobName = blobName.substring(blobName.lastIndexOf('/') + 1);
         }
 
         String connectionString = String.format(

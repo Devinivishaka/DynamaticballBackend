@@ -52,7 +52,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()   // LOGIN, RESET-PASSWORD public
-                        .requestMatchers("/api/v1/users/**").hasRole("SUPER_ADMIN")  // only SUPER_ADMIN
+                        .requestMatchers("/api/v1/users/profile-image/**").permitAll() // profile images public access
+                        .requestMatchers("/api/v1/users/**").authenticated()  // authenticated (roles governed by @PreAuthorize on Controller)
                         .anyRequest().authenticated() // everything else requires authentication
                 )
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
