@@ -69,7 +69,8 @@ public class UserController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PutMapping("/referees/{userId}")
     @Operation(summary = "Update referee", description = "Updates referee data by userId")
-    public ResponseEntity<ApiResponse<User>> updateReferee(@PathVariable String userId, @RequestBody @Valid UserDto userDto) {
+    public ResponseEntity<ApiResponse<User>> updateReferee(@PathVariable String userId,
+            @RequestBody @Valid UserDto userDto) {
         User user = userService.updateRefereeByUserId(userId, userDto);
         return ResponseEntity.ok(ApiResponse.<User>builder()
                 .success(true)
@@ -104,13 +105,20 @@ public class UserController {
                 .build());
     }
 
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @GetMapping("/profile-image/{blobName}")
     @Operation(summary = "Get profile image", description = "Retrieves profile image binary by blob name")
     public ResponseEntity<byte[]> getProfileImage(@PathVariable String blobName) {
         byte[] imageData = userService.getProfileImage(blobName);
+        String contentType = "image/jpeg";
+        if (blobName != null) {
+            String lower = blobName.toLowerCase();
+            if (lower.endsWith(".png")) contentType = "image/png";
+            else if (lower.endsWith(".gif")) contentType = "image/gif";
+            else if (lower.endsWith(".webp")) contentType = "image/webp";
+            else if (lower.endsWith(".svg")) contentType = "image/svg+xml";
+        }
         return ResponseEntity.ok()
-                .header("Content-Type", "image/jpeg") // or determine dynamically
+                .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, contentType)
                 .body(imageData);
     }
 

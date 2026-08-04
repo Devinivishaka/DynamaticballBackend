@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.*;
 import java.io.File;
 
-
 @Service
 public class UserService {
 
@@ -54,14 +53,14 @@ public class UserService {
         return baseUrl + "/api/v1/users/profile-image/" + rawProfileImage;
     }
 
-
     public User addUser(UserDto userDto) {
 
         if (userDto.getRole() == null) {
             throw new IllegalArgumentException("Role is required");
         }
 
-        if (userDto.getRole() != Role.REFEREE && userDto.getRole() != Role.SUPER_ADMIN && userDto.getRole() != Role.VIDEO_ADMIN) {
+        if (userDto.getRole() != Role.REFEREE && userDto.getRole() != Role.SUPER_ADMIN
+                && userDto.getRole() != Role.VIDEO_ADMIN) {
             throw new IllegalArgumentException("Invalid role");
         }
 
@@ -76,7 +75,6 @@ public class UserService {
         return userRepository.save(user);
     }
 
-
     public List<RefereeResponseDto> getAllRefereesDto() {
         return userRepository.findAll().stream()
                 .filter(user -> user.getRole() == Role.REFEREE)
@@ -86,8 +84,7 @@ public class UserService {
                         user.getLastName(),
                         user.getUsername(),
                         user.getPassword(),
-                        "EDIT/REMOVE"
-                ))
+                        "EDIT/REMOVE"))
                 .toList();
     }
 
@@ -95,11 +92,16 @@ public class UserService {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Referee not found with ID: " + userId));
 
-        if (userDto.getFirstName() != null) user.setFirstName(userDto.getFirstName());
-        if (userDto.getLastName() != null) user.setLastName(userDto.getLastName());
-        if (userDto.getUsername() != null) user.setUsername(userDto.getUsername());
-        if (userDto.getPassword() != null) user.setPassword(userDto.getPassword());
-        if (userDto.getRole() != null) user.setRole(userDto.getRole());
+        if (userDto.getFirstName() != null)
+            user.setFirstName(userDto.getFirstName());
+        if (userDto.getLastName() != null)
+            user.setLastName(userDto.getLastName());
+        if (userDto.getUsername() != null)
+            user.setUsername(userDto.getUsername());
+        if (userDto.getPassword() != null)
+            user.setPassword(userDto.getPassword());
+        if (userDto.getRole() != null)
+            user.setRole(userDto.getRole());
 
         return userRepository.save(user);
     }
@@ -115,9 +117,9 @@ public class UserService {
         Page<User> usersPage;
 
         if (search != null && !search.trim().isEmpty()) {
-            usersPage = userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrUsernameContainingIgnoreCase(
-                    search, search, search, pageable
-            );
+            usersPage = userRepository
+                    .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrUsernameContainingIgnoreCase(
+                            search, search, search, pageable);
         } else {
             usersPage = userRepository.findAll(pageable);
         }
@@ -223,7 +225,6 @@ public class UserService {
         }
     }
 
-
     public void deleteProfileImage(String userId) {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
@@ -247,7 +248,8 @@ public class UserService {
         BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
         BlobClient blobClient = containerClient.getBlobClient(blobName);
 
-        if (blobClient.exists()) blobClient.delete();
+        if (blobClient.exists())
+            blobClient.delete();
 
         user.setProfileImageUrl(null);
         userRepository.save(user);

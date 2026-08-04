@@ -13,7 +13,7 @@ public class RefereeResponseDto {
     private Long id;
     private String firstName;
     private String lastName;
-    private String username;   // email
-    private String password;   // raw password (visible to Super Admin)
-    private String action;     //  "EDIT/REMOVE" for frontend buttons
+    private String username; // email
+    private String password; // raw password (visible to Super Admin)
+    private String action; // "EDIT/REMOVE" for frontend buttons
 }
