@@ -19,7 +19,6 @@ import jakarta.persistence.EntityNotFoundException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.io.File;
 
 @Service
 public class UserService {
