@@ -43,7 +43,7 @@ public class EmailService {
         String htmlContent = "<html><body>"
                 + "<p>Your OTP for password reset is:</p>"
                 + "<h2>" + otp + "</h2>"
-                + "<p>This OTP will expire in 15 minutes.</p>"
+                + "<p>This OTP will expire in 5 minutes.</p>"
                 + "</body></html>";
 
         try {

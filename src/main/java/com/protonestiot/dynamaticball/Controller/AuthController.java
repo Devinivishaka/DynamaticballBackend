@@ -51,7 +51,7 @@ public class AuthController {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    private static final long OTP_EXPIRATION_MS = 15 * 60 * 1000; // 15 mins
+    private static final long OTP_EXPIRATION_MS = 5 * 60 * 1000; // 5 mins
 
     private String generateOtp() {
         SecureRandom random = new SecureRandom();
