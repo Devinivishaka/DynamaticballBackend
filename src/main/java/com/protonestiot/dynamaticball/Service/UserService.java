@@ -8,6 +8,7 @@ import com.protonestiot.dynamaticball.Dto.RefereeResponseDto;
 import com.protonestiot.dynamaticball.Dto.UserDto;
 import com.protonestiot.dynamaticball.Entity.Role;
 import com.protonestiot.dynamaticball.Entity.User;
+import com.protonestiot.dynamaticball.Exception.UserAlreadyExistsException;
 import com.protonestiot.dynamaticball.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,10 +64,19 @@ public class UserService {
             throw new IllegalArgumentException("Invalid role");
         }
 
+        if (userDto.getUsername() == null || userDto.getUsername().trim().isEmpty()) {
+            throw new IllegalArgumentException("Username is required");
+        }
+
+        String username = userDto.getUsername().trim();
+        if (userRepository.existsByUsernameIgnoreCase(username)) {
+            throw new UserAlreadyExistsException("User already exists");
+        }
+
         User user = new User();
-        user.setFirstName(userDto.getFirstName());
-        user.setLastName(userDto.getLastName());
-        user.setUsername(userDto.getUsername());
+        user.setFirstName(userDto.getFirstName() != null ? userDto.getFirstName().trim() : null);
+        user.setLastName(userDto.getLastName() != null ? userDto.getLastName().trim() : null);
+        user.setUsername(username);
         user.setPassword(userDto.getPassword());
 
         user.setRole(userDto.getRole());
@@ -92,11 +102,17 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("Referee not found with ID: " + userId));
 
         if (userDto.getFirstName() != null)
-            user.setFirstName(userDto.getFirstName());
+            user.setFirstName(userDto.getFirstName().trim());
         if (userDto.getLastName() != null)
-            user.setLastName(userDto.getLastName());
-        if (userDto.getUsername() != null)
-            user.setUsername(userDto.getUsername());
+            user.setLastName(userDto.getLastName().trim());
+        if (userDto.getUsername() != null && !userDto.getUsername().trim().isEmpty()) {
+            String updatedUsername = userDto.getUsername().trim();
+            Optional<User> existingUser = userRepository.findByUsernameIgnoreCase(updatedUsername);
+            if (existingUser.isPresent() && !existingUser.get().getUserId().equals(userId)) {
+                throw new UserAlreadyExistsException("User already exists");
+            }
+            user.setUsername(updatedUsername);
+        }
         if (userDto.getPassword() != null)
             user.setPassword(userDto.getPassword());
         if (userDto.getRole() != null)

@@ -6,71 +6,102 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private ResponseEntity<ErrorResponseDto> buildError(String error, String message, HttpStatus status, HttpServletRequest request) {
+    private ResponseEntity<ErrorResponseDto> buildError(String error, String message, HttpStatus status,
+            HttpServletRequest request) {
         ErrorResponseDto body = new ErrorResponseDto(false, status.value(), error, message, request.getRequestURI());
         return new ResponseEntity<>(body, status);
     }
 
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponseDto> handleUserAlreadyExists(UserAlreadyExistsException ex,
+            HttpServletRequest request) {
+        return buildError("Duplicate User", ex.getMessage(), HttpStatus.CONFLICT, request);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponseDto> handleDataIntegrityViolation(DataIntegrityViolationException ex,
+            HttpServletRequest request) {
+        return buildError("Duplicate User", "User already exists", HttpStatus.CONFLICT, request);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponseDto> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
+        String message = "Invalid request payload";
+        if (ex.getCause() instanceof InvalidFormatException ife) {
+            if (ife.getTargetType() != null && ife.getTargetType().isEnum()) {
+                String fieldName = ife.getPath().isEmpty() ? "field"
+                        : ife.getPath().get(ife.getPath().size() - 1).getFieldName();
+                message = "Invalid " + fieldName;
+            }
+        }
+        return buildError("Validation Error", message, HttpStatus.BAD_REQUEST, request);
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseDto> handleValidationErrors(MethodArgumentNotValidException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleValidationErrors(MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
         String message = ex.getBindingResult().getFieldErrors()
                 .stream().map(f -> f.getField() + ": " + f.getDefaultMessage())
                 .findFirst().orElse("Validation failed for the request.");
         return buildError("Validation Error", message, HttpStatus.BAD_REQUEST, request);
     }
 
-
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleEntityNotFound(EntityNotFoundException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleEntityNotFound(EntityNotFoundException ex,
+            HttpServletRequest request) {
         return buildError("Not Found", ex.getMessage(), HttpStatus.NOT_FOUND, request);
     }
 
-
     @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleUserNotFound(UsernameNotFoundException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleUserNotFound(UsernameNotFoundException ex,
+            HttpServletRequest request) {
         return buildError("User Not Found", ex.getMessage(), HttpStatus.NOT_FOUND, request);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponseDto> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleBadCredentials(BadCredentialsException ex,
+            HttpServletRequest request) {
         return buildError("Invalid Credentials", ex.getMessage(), HttpStatus.UNAUTHORIZED, request);
     }
 
-
     @ExceptionHandler(ExpiredJwtException.class)
     public ResponseEntity<ErrorResponseDto> handleJwtExpired(ExpiredJwtException ex, HttpServletRequest request) {
-        return buildError("JWT Token Expired", "Your authentication token has expired. Please login again.", HttpStatus.UNAUTHORIZED, request);
+        return buildError("JWT Token Expired", "Your authentication token has expired. Please login again.",
+                HttpStatus.UNAUTHORIZED, request);
     }
 
-    @ExceptionHandler({MalformedJwtException.class, SignatureException.class})
+    @ExceptionHandler({ MalformedJwtException.class, SignatureException.class })
     public ResponseEntity<ErrorResponseDto> handleJwtMalformed(Exception ex, HttpServletRequest request) {
-        return buildError("Invalid JWT Token", "The provided authentication token is invalid.", HttpStatus.UNAUTHORIZED, request);
+        return buildError("Invalid JWT Token", "The provided authentication token is invalid.", HttpStatus.UNAUTHORIZED,
+                request);
     }
-
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException ex,
+            HttpServletRequest request) {
         return buildError("Invalid Request", ex.getMessage(), HttpStatus.BAD_REQUEST, request);
     }
-
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponseDto> handleRuntimeExceptions(RuntimeException ex, HttpServletRequest request) {
         return buildError("Error", ex.getMessage(), HttpStatus.BAD_REQUEST, request);
     }
-
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleAll(Exception ex, HttpServletRequest request) {
@@ -80,9 +111,9 @@ public class GlobalExceptionHandler {
                 request);
     }
 
-
     @ExceptionHandler(GameSetupException.class)
-    public ResponseEntity<ErrorResponseDto> handleGameSetupException(GameSetupException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponseDto> handleGameSetupException(GameSetupException ex,
+            HttpServletRequest request) {
         return buildError("Game Setup Error", ex.getMessage(), HttpStatus.BAD_REQUEST, request);
     }
 }

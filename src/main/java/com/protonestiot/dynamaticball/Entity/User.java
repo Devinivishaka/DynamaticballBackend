@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
@@ -68,11 +67,6 @@ public class User {
         if (this.userId == null) {
             this.userId = String.format("U_%03d", this.id);
         }
-    }
-
-
-    private String generateUserId() {
-        return String.format("U_%03d", (int) (System.currentTimeMillis() % 1000));
     }
 
 

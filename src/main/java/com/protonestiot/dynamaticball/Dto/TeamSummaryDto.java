@@ -1,7 +1,6 @@
 package com.protonestiot.dynamaticball.Dto;
 
 import lombok.*;
-import java.util.List;
 
 @Getter
 @Setter
