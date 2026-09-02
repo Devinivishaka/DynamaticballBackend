@@ -3,6 +3,7 @@ package com.protonestiot.dynamaticball.Controller;
 import com.protonestiot.dynamaticball.Dto.ApiResponse;
 import com.protonestiot.dynamaticball.Dto.RefereeResponseDto;
 import com.protonestiot.dynamaticball.Dto.UserDto;
+import com.protonestiot.dynamaticball.Entity.Role;
 import com.protonestiot.dynamaticball.Entity.User;
 import com.protonestiot.dynamaticball.Service.UserService;
 import jakarta.validation.Valid;
@@ -67,26 +68,28 @@ public class UserController {
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @PutMapping("/referees/{userId}")
-    @Operation(summary = "Update referee", description = "Updates referee data by userId")
+    @PutMapping({"/referees/{userId}", "/{userId}"})
+    @Operation(summary = "Update user", description = "Updates user data by userId")
     public ResponseEntity<ApiResponse<User>> updateReferee(@PathVariable String userId,
             @RequestBody @Valid UserDto userDto) {
         User user = userService.updateRefereeByUserId(userId, userDto);
+        String roleName = Role.formatRole(user.getRole());
         return ResponseEntity.ok(ApiResponse.<User>builder()
                 .success(true)
-                .message("Referee updated successfully")
+                .message(roleName + " updated successfully")
                 .data(user)
                 .build());
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @DeleteMapping("/referees/{userId}")
-    @Operation(summary = "Delete referee", description = "Deletes referee by userId")
+    @DeleteMapping({"/referees/{userId}", "/{userId}"})
+    @Operation(summary = "Delete user", description = "Deletes user by userId")
     public ResponseEntity<ApiResponse<Void>> deleteReferee(@PathVariable String userId) {
-        userService.deleteRefereeByUserId(userId);
+        User deletedUser = userService.deleteUserByUserId(userId);
+        String roleName = Role.formatRole(deletedUser.getRole());
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .success(true)
-                .message("Referee deleted successfully")
+                .message(roleName + " deleted successfully")
                 .build());
     }
 

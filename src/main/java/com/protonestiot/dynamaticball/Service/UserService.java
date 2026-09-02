@@ -99,7 +99,7 @@ public class UserService {
 
     public User updateRefereeByUserId(String userId, UserDto userDto) {
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Referee not found with ID: " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
 
         if (userDto.getFirstName() != null)
             user.setFirstName(userDto.getFirstName().trim());
@@ -121,10 +121,15 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public void deleteRefereeByUserId(String userId) {
+    public User deleteRefereeByUserId(String userId) {
+        return deleteUserByUserId(userId);
+    }
+
+    public User deleteUserByUserId(String userId) {
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Referee not found with ID: " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
         userRepository.delete(user);
+        return user;
     }
 
     public Map<String, Object> getUsers(int page, int limit, String search) {
