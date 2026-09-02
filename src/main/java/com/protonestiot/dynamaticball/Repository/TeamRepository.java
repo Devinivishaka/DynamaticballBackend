@@ -9,4 +9,6 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     Optional<Team> findByGameSetup_SetupCodeAndTeamKey(String setupCode, String teamKey);
     java.util.List<Team> findByNameContainingIgnoreCase(String name);
+    java.util.List<Team> findByNameIgnoreCase(String name);
+    java.util.List<Team> findByNameIgnoreCaseOrTeamKeyIgnoreCase(String name, String teamKey);
 }

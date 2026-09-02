@@ -34,7 +34,11 @@ public class GameHistoryService {
         }
 
         if (teamName != null && !teamName.isBlank()) {
-            List<Long> matchingTeamIds = teamRepository.findByNameContainingIgnoreCase(teamName).stream().map(com.protonestiot.dynamaticball.Entity.Team::getId).toList();
+            String trimmedTeam = teamName.trim();
+            List<Long> matchingTeamIds = teamRepository.findByNameIgnoreCaseOrTeamKeyIgnoreCase(trimmedTeam, trimmedTeam)
+                    .stream()
+                    .map(com.protonestiot.dynamaticball.Entity.Team::getId)
+                    .toList();
             if (matchingTeamIds.isEmpty()) {
                 specs.add((root, query, cb) -> cb.disjunction());
             } else {
