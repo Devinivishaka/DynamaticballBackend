@@ -74,6 +74,7 @@ public class GameHistoryService {
                     .build();
 
             return GameHistoryItemDto.builder()
+                    .matchId(match.getMatchCode())
                     .gameId(match.getGameId())
                     .date(match.getEndTime() != null ? match.getEndTime().toLocalDate().toString() : null)
                     .teamA(teamA)

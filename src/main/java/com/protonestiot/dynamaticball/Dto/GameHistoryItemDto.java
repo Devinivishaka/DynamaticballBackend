@@ -8,6 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class GameHistoryItemDto {
+    private String matchId;
     private String gameId;
     private String date;
     private TeamDto teamA;
