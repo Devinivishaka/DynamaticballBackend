@@ -192,9 +192,8 @@ public class UserService {
             throw new IllegalArgumentException("Please select a valid image file to upload.");
         }
 
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
-            throw new IllegalArgumentException("Invalid file format. Only image files (JPEG, PNG, WEBP, GIF, SVG) are allowed.");
+        if (!isImageFile(file)) {
+            throw new IllegalArgumentException("Invalid file format. Only image files (JPG, JPEG, PNG, WEBP, GIF, SVG, BMP) are allowed.");
         }
 
         User user = userRepository.findByUserId(userId)
@@ -299,4 +298,22 @@ public class UserService {
         user.setProfileImageUrl(null);
         userRepository.save(user);
     }
+
+    private boolean isImageFile(MultipartFile file) {
+        String contentType = file.getContentType();
+        if (contentType != null && contentType.toLowerCase().startsWith("image/")) {
+            return true;
+        }
+        String filename = file.getOriginalFilename();
+        if (filename != null && !filename.trim().isEmpty()) {
+            String lower = filename.toLowerCase();
+            return lower.endsWith(".jpg") || lower.endsWith(".jpeg")
+                    || lower.endsWith(".png") || lower.endsWith(".webp")
+                    || lower.endsWith(".gif") || lower.endsWith(".svg")
+                    || lower.endsWith(".bmp") || lower.endsWith(".jfif")
+                    || lower.endsWith(".avif");
+        }
+        return false;
+    }
 }
+
