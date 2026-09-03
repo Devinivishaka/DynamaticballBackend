@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
@@ -96,6 +97,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException ex,
             HttpServletRequest request) {
         return buildError("Invalid Request", ex.getMessage(), HttpStatus.BAD_REQUEST, request);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponseDto> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex,
+            HttpServletRequest request) {
+        return buildError("Payload Too Large", "Maximum upload size exceeded. Allowed file limit is 10MB.",
+                HttpStatus.PAYLOAD_TOO_LARGE, request);
     }
 
     @ExceptionHandler(RuntimeException.class)

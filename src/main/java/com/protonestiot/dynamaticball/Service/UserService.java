@@ -188,6 +188,15 @@ public class UserService {
     }
 
     public String uploadProfileImage(String userId, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Please select a valid image file to upload.");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+            throw new IllegalArgumentException("Invalid file format. Only image files (JPEG, PNG, WEBP, GIF, SVG) are allowed.");
+        }
+
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
 
@@ -204,6 +213,22 @@ public class UserService {
 
             if (!containerClient.exists()) {
                 containerClient.create();
+            }
+
+            // Cleanup old blob if it exists to avoid orphaned storage files
+            String oldBlobName = user.getProfileImageUrl();
+            if (oldBlobName != null && !oldBlobName.trim().isEmpty()) {
+                String oldExtracted = oldBlobName.contains("/profile-image/")
+                        ? oldBlobName.substring(oldBlobName.lastIndexOf('/') + 1)
+                        : oldBlobName;
+                try {
+                    BlobClient oldBlobClient = containerClient.getBlobClient(oldExtracted);
+                    if (oldBlobClient.exists()) {
+                        oldBlobClient.delete();
+                    }
+                } catch (Exception ignored) {
+                    // Ignore deletion error so new image upload can still succeed
+                }
             }
 
             String blobName = userId + "_" + UUID.randomUUID() + "_" + file.getOriginalFilename();

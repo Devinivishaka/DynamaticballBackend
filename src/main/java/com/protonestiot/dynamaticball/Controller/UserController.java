@@ -94,8 +94,8 @@ public class UserController {
     }
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
-    @PostMapping("/{userId}/upload-profile-image")
-    @Operation(summary = "Upload profile image", description = "Uploads profile image to Azure Blob Storage and returns blob name")
+    @RequestMapping(value = "/{userId}/upload-profile-image", method = {RequestMethod.POST, RequestMethod.PUT})
+    @Operation(summary = "Upload or update profile image", description = "Uploads/updates profile image to Azure Blob Storage and returns image URL")
     public ResponseEntity<ApiResponse<String>> uploadProfileImage(
             @PathVariable String userId,
             @RequestParam("file") MultipartFile file) {
