@@ -102,7 +102,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponseDto> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex,
             HttpServletRequest request) {
-        return buildError("Payload Too Large", "Maximum upload size exceeded. Allowed file limit is 10MB.",
+        long maxBytes = ex.getMaxUploadSize();
+        String limitStr = (maxBytes > 0)
+                ? (maxBytes >= 1024 * 1024 ? (maxBytes / (1024 * 1024)) + "MB" : (maxBytes / 1024) + "KB")
+                : "configured limit";
+        return buildError("Payload Too Large",
+                "Maximum upload size exceeded. Server limit is " + limitStr + ".",
                 HttpStatus.PAYLOAD_TOO_LARGE, request);
     }
 
