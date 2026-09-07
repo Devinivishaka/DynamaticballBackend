@@ -11,11 +11,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -161,5 +165,44 @@ class UserServiceTest {
 
         assertEquals(userId, deleted.getUserId());
         verify(userRepository).delete(refereeUser);
+    }
+
+    @Test
+    void getUsers_excludesSuperAdmin_withoutSearch() {
+        User referee = new User();
+        referee.setUserId("U_001");
+        referee.setRole(Role.REFEREE);
+        referee.setUsername("referee@example.com");
+
+        when(userRepository.findByRoleNot(eq(Role.SUPER_ADMIN), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(referee)));
+
+        Map<String, Object> result = userService.getUsers(1, 10, null);
+
+        assertNotNull(result);
+        assertTrue((Boolean) result.get("success"));
+        Map<?, ?> data = (Map<?, ?>) result.get("data");
+        List<?> users = (List<?>) data.get("users");
+        assertEquals(1, users.size());
+        verify(userRepository).findByRoleNot(eq(Role.SUPER_ADMIN), any(Pageable.class));
+    }
+
+    @Test
+    void getUsers_excludesSuperAdmin_withSearch() {
+        User referee = new User();
+        referee.setUserId("U_001");
+        referee.setRole(Role.REFEREE);
+        referee.setUsername("john@example.com");
+
+        when(userRepository.searchUsersExcludingRole(eq("john"), eq(Role.SUPER_ADMIN), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(referee)));
+
+        Map<String, Object> result = userService.getUsers(1, 10, "john");
+
+        assertNotNull(result);
+        Map<?, ?> data = (Map<?, ?>) result.get("data");
+        List<?> users = (List<?>) data.get("users");
+        assertEquals(1, users.size());
+        verify(userRepository).searchUsersExcludingRole(eq("john"), eq(Role.SUPER_ADMIN), any(Pageable.class));
     }
 }

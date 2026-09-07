@@ -165,11 +165,9 @@ public class UserService {
         Page<User> usersPage;
 
         if (search != null && !search.trim().isEmpty()) {
-            usersPage = userRepository
-                    .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrUsernameContainingIgnoreCase(
-                            search, search, search, pageable);
+            usersPage = userRepository.searchUsersExcludingRole(search.trim(), Role.SUPER_ADMIN, pageable);
         } else {
-            usersPage = userRepository.findAll(pageable);
+            usersPage = userRepository.findByRoleNot(Role.SUPER_ADMIN, pageable);
         }
 
         Map<String, Object> response = new LinkedHashMap<>();
