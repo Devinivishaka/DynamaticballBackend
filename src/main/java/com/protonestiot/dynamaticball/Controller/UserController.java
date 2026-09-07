@@ -60,14 +60,14 @@ public class UserController {
                 .build());
     }
 
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @GetMapping("/{userId}")
     @Operation(summary = "Get user by ID", description = "Retrieves user details by userId")
     public ResponseEntity<Map<String, Object>> getUserById(@PathVariable String userId) {
         return ResponseEntity.ok(userService.getUserByUserId(userId));
     }
 
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','REFEREE')")
     @PutMapping({"/referees/{userId}", "/{userId}"})
     @Operation(summary = "Update user", description = "Updates user data by userId")
     public ResponseEntity<ApiResponse<User>> updateReferee(@PathVariable String userId,

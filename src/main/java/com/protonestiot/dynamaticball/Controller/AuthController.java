@@ -10,6 +10,7 @@ import com.protonestiot.dynamaticball.Repository.UserRepository;
 import com.protonestiot.dynamaticball.Repository.VerificationTokenRepository;
 import com.protonestiot.dynamaticball.Service.CustomUserDetailsService;
 import com.protonestiot.dynamaticball.Service.EmailService;
+import com.protonestiot.dynamaticball.Service.UserService;
 import com.protonestiot.dynamaticball.util.JwtHelper;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,9 @@ public class AuthController {
     private CustomUserDetailsService userDetailsService;
 
     @Autowired
+    private UserService userService;
+
+    @Autowired
     private JwtHelper jwtUtil;
 
     @Autowired
@@ -61,7 +65,7 @@ public class AuthController {
 
 
     @PostMapping("/login")
-    @Operation(summary = "Login", description = "Authenticates user and returns JWT token")
+    @Operation(summary = "Login", description = "Authenticates user and returns JWT token and profile image URL")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
 
         User user = userRepository.findByUsernameIgnoreCase(loginRequest.getUsername())
@@ -74,6 +78,7 @@ public class AuthController {
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String jwt = jwtUtil.generateToken(userDetails);
         List<String> roles = List.of(user.getRole().name());
+        String profileImageUrl = userService.constructProfileImageUrl(user.getProfileImageUrl());
 
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", jwt)
                 .httpOnly(true)
@@ -84,7 +89,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
-                .body(new LoginResponse(jwt, roles));
+                .body(new LoginResponse(jwt, roles, profileImageUrl));
     }
 
     @GetMapping("/logout")

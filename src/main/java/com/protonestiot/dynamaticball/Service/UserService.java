@@ -82,8 +82,17 @@ public class UserService {
         user.setUsername(username);
         user.setPassword(userDto.getPassword());
         user.setRole(role);
+        if (userDto.getProfileImageUrl() != null && !userDto.getProfileImageUrl().trim().isEmpty()) {
+            user.setProfileImageUrl(userDto.getProfileImageUrl().trim());
+        }
 
-        return userRepository.save(user);
+        user = userRepository.save(user);
+        if (user.getUserId() == null && user.getId() != null) {
+            user.setUserId(String.format("U_%03d", user.getId()));
+            user = userRepository.save(user);
+        }
+
+        return user;
     }
 
     public List<RefereeResponseDto> getAllRefereesDto() {
@@ -91,10 +100,12 @@ public class UserService {
                 .filter(user -> user.getRole() == Role.REFEREE)
                 .map(user -> new RefereeResponseDto(
                         user.getId(),
+                        user.getUserId(),
                         user.getFirstName(),
                         user.getLastName(),
                         user.getUsername(),
                         user.getPassword(),
+                        constructProfileImageUrl(user.getProfileImageUrl()),
                         "EDIT/REMOVE"))
                 .toList();
     }
@@ -117,6 +128,9 @@ public class UserService {
         }
         if (userDto.getPassword() != null)
             user.setPassword(userDto.getPassword());
+        if (userDto.getProfileImageUrl() != null) {
+            user.setProfileImageUrl(userDto.getProfileImageUrl().trim());
+        }
         if (userDto.getRole() != null) {
             if (userDto.getRole() == Role.SUPER_ADMIN
                     && userRepository.existsByRoleAndUserIdNot(Role.SUPER_ADMIN, userId)) {
