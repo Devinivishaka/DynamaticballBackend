@@ -55,15 +55,6 @@ public class UserService {
 
     public User addUser(UserDto userDto) {
 
-        if (userDto.getRole() == null) {
-            throw new IllegalArgumentException("Role is required");
-        }
-
-        if (userDto.getRole() != Role.REFEREE && userDto.getRole() != Role.SUPER_ADMIN
-                && userDto.getRole() != Role.VIDEO_ADMIN) {
-            throw new IllegalArgumentException("Invalid role");
-        }
-
         if (userDto.getUsername() == null || userDto.getUsername().trim().isEmpty()) {
             throw new IllegalArgumentException("Username is required");
         }
@@ -73,13 +64,24 @@ public class UserService {
             throw new UserAlreadyExistsException("User already exists");
         }
 
+        // Role defaults to REFEREE if not provided
+        Role role = userDto.getRole() != null ? userDto.getRole() : Role.REFEREE;
+
+        // Enforce single Super Admin constraint
+        if (role == Role.SUPER_ADMIN && userRepository.existsByRole(Role.SUPER_ADMIN)) {
+            throw new IllegalArgumentException("A Super Admin already exists. Only one Super Admin is allowed.");
+        }
+
+        if (role != Role.REFEREE && role != Role.SUPER_ADMIN && role != Role.VIDEO_ADMIN) {
+            throw new IllegalArgumentException("Invalid role");
+        }
+
         User user = new User();
         user.setFirstName(userDto.getFirstName() != null ? userDto.getFirstName().trim() : null);
         user.setLastName(userDto.getLastName() != null ? userDto.getLastName().trim() : null);
         user.setUsername(username);
         user.setPassword(userDto.getPassword());
-
-        user.setRole(userDto.getRole());
+        user.setRole(role);
 
         return userRepository.save(user);
     }
@@ -115,8 +117,17 @@ public class UserService {
         }
         if (userDto.getPassword() != null)
             user.setPassword(userDto.getPassword());
-        if (userDto.getRole() != null)
+        if (userDto.getRole() != null) {
+            if (userDto.getRole() == Role.SUPER_ADMIN
+                    && userRepository.existsByRoleAndUserIdNot(Role.SUPER_ADMIN, userId)) {
+                throw new IllegalArgumentException("A Super Admin already exists. Only one Super Admin is allowed.");
+            }
+            if (userDto.getRole() != Role.REFEREE && userDto.getRole() != Role.SUPER_ADMIN
+                    && userDto.getRole() != Role.VIDEO_ADMIN) {
+                throw new IllegalArgumentException("Invalid role");
+            }
             user.setRole(userDto.getRole());
+        }
 
         return userRepository.save(user);
     }
@@ -128,6 +139,9 @@ public class UserService {
     public User deleteUserByUserId(String userId) {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+        if (user.getRole() == Role.SUPER_ADMIN) {
+            throw new IllegalArgumentException("Super Admin cannot be deleted");
+        }
         userRepository.delete(user);
         return user;
     }

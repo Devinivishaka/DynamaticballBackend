@@ -1,5 +1,6 @@
 package com.protonestiot.dynamaticball.Repository;
 
+import com.protonestiot.dynamaticball.Entity.Role;
 import com.protonestiot.dynamaticball.Entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,4 +26,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     );
 
+    boolean existsByRole(Role role);
+
+    boolean existsByRoleAndUserIdNot(Role role, String userId);
 }
